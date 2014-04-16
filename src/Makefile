@@ -13,7 +13,8 @@ CFLAGS = -g $(INCLUDE)
 
 #LDFLAGS = -llapack -lg2c -lm
 #LDFLAGS = -static /usr/lib/libm.a /usr/lib/gcc-lib/i386-redhat-linux/3.2.3/libg2c.a /lib/ssa/gcc-lib/i386-redhat-linux-gnu/3.5-tree-ssa/libg2c.a /usr/lib/liblapack.a
-LDFLAGS = /usr/lib/liblapack-2.a /usr/lib/libg2c.a /usr/lib/libm.a /usr/lib/libblas-2.a
+#LDFLAGS = /usr/lib/liblapack-2.a /usr/lib/libg2c.a /usr/lib/libm.a /usr/lib/libblas-2.a
+LDFLAGS = -llapack
 #LDFLAGS = -llapack /usr/lib/gcc-lib/i386-redhat-linux/3.2.3/libg2c.a /usr/lib/libm.a
 
 SUFFIXES: 
