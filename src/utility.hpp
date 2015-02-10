@@ -3,6 +3,9 @@
 #include <vector>
 
 using namespace std;
+extern "C" void init_genrand(unsigned long s);
+extern "C" double genrand_real2(void);
+extern "C" double genrand_real3(void); // random on (0,1) instead of [0,1)
 
 double ranf();
 // generate a random integer according to a user-defined density

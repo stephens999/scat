@@ -8,8 +8,10 @@ using namespace std;
 
 
 double ranf(){
-  return random()/(RAND_MAX+1.0);
+  double u = genrand_real3();
+  return u; //genrand_real2();
 }
+
 
 // generate a random integer according to a user-defined density
 int rint2 ( const vector<double> & prob, double psum )
