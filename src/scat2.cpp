@@ -2024,44 +2024,8 @@ static int RecursionCheck = 0;
  		}
  	}
 
-//   memset( (void*)NewTheta, 0, NREGION*sizeof (dspeclocallele) );	// inspection indicates these are not needed
-//   memset( (void*)NewLogLik, 0, NREGION*sizeof (dregspecloc) );	
-//   memset( (void*)NewSumExpTheta, 0, NREGION*sizeof (dregspecloc) );	
-
-   //double **** NewTheta = new double *** [NREGION];
-  //double **** NewExpTheta = new double *** [NREGION];
-  //double *** NewLogLik = new double ** [NREGION];
-  //double *** NewSumExpTheta = new double ** [NREGION];
-  
   update_Alpha0(Alpha, X);
 
-  
-//  for(int r=0; r<NREGION; r++){	//inspection again
-//		NewTheta[r] = new double ** [NSPECIES];
-//		NewExpTheta[r] = new double ** [NSPECIES];    
-//		NewLogLik[r] = new double * [NSPECIES];
-//		NewSumExpTheta[r] = new double * [NSPECIES];
-//		for(int k=0; k<NSPECIES; k++){
-//			  NewTheta[r][k] = new double * [NLOCI];
-//			  NewExpTheta[r][k] = new double * [NLOCI]; 
-//			  NewLogLik[r][k] = new double [NLOCI];
-//			  NewSumExpTheta[r][k] = new double  [NLOCI];
-//			  for(int l=0; l<NLOCI; l++){
-//					NewTheta[r][k][l] = (double *) calloc(Nallele[l] , sizeof(double)); //new double [MAXNALLELE]; Changed Nov 5 2012.
-//					NewExpTheta[r][k][l] = (double *) calloc(Nallele[l] , sizeof(double)); //new double [MAXNALLELE];	
-//					for(int j=0;j<Nallele[l];j++){	 
-						//NewTheta[r][k][l][j] = 0;
-//						NewExpTheta[r][k][l][j] = 1;
-//					}
-					//NewLogLik,NewLogLik[r][k][l] = 0;
-					//NewSumExpTheta[r][k][l] = 0;	
-//			  }
-//		}
-//  }
-    
-  //double * NewL = new double [NREGION * NREGION];
-  
-  
   for(int alphaparam = 1; alphaparam < ALPHALENGTH; alphaparam++){
     ALPHAATTEMPT[alphaparam] +=1;
     vector<double> NewAlpha(Alpha);
@@ -2143,31 +2107,6 @@ static int RecursionCheck = 0;
       //cout << "Reject!" << endl;
     }
   }
-
-//  for(int r=0; r<NREGION; r++){
-//    for(int k=0; k<NSPECIES; k++){
-//      for(int l=0; l<NLOCI; l++){
-			//delete [] NewTheta[r][k][l];
-			//delete [] NewExpTheta[r][k][l];
-			//free (NewTheta[r][k][l]);
-			//free (NewExpTheta[r][k][l]);
-//      }
-//      delete [] NewTheta[r][k];
-//      delete [] NewExpTheta[r][k];
-//      delete [] NewLogLik[r][k];
-//      delete [] NewSumExpTheta[r][k];
-//    }
-//    delete [] NewTheta[r];
-//    delete [] NewExpTheta[r];
-//    delete [] NewLogLik[r];
-//    delete [] NewSumExpTheta[r];
-//  }
-	
-//  delete [] NewTheta;
-//  delete [] NewExpTheta;
-//  delete [] NewSumExpTheta;
-//  delete [] NewLogLik;
-//  delete [] NewL;
 
   if( ValidateAssumptions ) RecursionCheck--;
 
@@ -2465,10 +2404,6 @@ void update_XSingle(vector<double> & Alpha, dregspeclocallele X, double ** Mu, d
       }
     }
   }
-  //delete [] NewTheta;
-  //delete [] NewExpTheta;
-  //delete [] NewSumExpTheta;
-  //delete [] NewLogLik;
 
   if( ValidateAssumptions ) RecursionCheck--;
 
@@ -3232,13 +3167,6 @@ int main ( int argc, char** argv)
 
   
   for(int r=0; r<NREGION; r++){
-//    Count[r] = new int ** [NSPECIES];
-//    Theta[r] = new double ** [NSPECIES];
-//    ExpTheta[r] =  new double ** [NSPECIES];
-//    X[r] = new double ** [NSPECIES];   
-//    LogLik[r] = new double * [NSPECIES];
-//    SumCount[r] = new int * [NSPECIES];
-//    SumExpTheta[r] = new double * [NSPECIES];
     MeanFreq[r] = new double ** [NSPECIES];
     MeanX[r] = new double ** [NSPECIES];
     MeanX2[r] = new double ** [NSPECIES];
@@ -3247,13 +3175,6 @@ int main ( int argc, char** argv)
     MeanCor[r] = new double ** [NSPECIES];
     MeanFittedCor[r] = new double ** [NSPECIES];
     for(int k=0; k<NSPECIES; k++){
-//      Count[r][k] = new int * [NLOCI];
-//      Theta[r][k] = new double * [NLOCI];
-//      ExpTheta[r][k] = new double * [NLOCI];
-//      X[r][k] = new double * [NLOCI];
-//      LogLik[r][k] = new double [NLOCI];
-//      SumCount[r][k] = new int  [NLOCI];
-//      SumExpTheta[r][k] = new double  [NLOCI];
       MeanFreq[r][k] = new double * [NLOCI];
       MeanX[r][k] = new double * [NLOCI];
       MeanX2[r][k] = new double * [NLOCI];
@@ -3262,37 +3183,33 @@ int main ( int argc, char** argv)
       MeanCor[r][k] = new double * [NREGION];
       MeanFittedCor[r][k] = new double * [NREGION];
       for(int r1=0; r1<NREGION; r1++){
-	MeanCov[r][k][r1] = new double [NSPECIES];
-	MeanFittedCov[r][k][r1] = new double [NSPECIES];
-	MeanCor[r][k][r1] = new double [NSPECIES];
-	MeanFittedCor[r][k][r1] = new double [NSPECIES];
-	for (int k1 = 0; k1<NSPECIES; k1++){
-	  MeanCov[r][k][r1][k1] = 0;
-	  MeanFittedCov[r][k][r1][k1] = 0;
-	  MeanCor[r][k][r1][k1] = 0;
-	  MeanFittedCor[r][k][r1][k1] = 0;
-	}
+	      MeanCov[r][k][r1] = new double [NSPECIES];
+	      MeanFittedCov[r][k][r1] = new double [NSPECIES];
+	      MeanCor[r][k][r1] = new double [NSPECIES];
+	      MeanFittedCor[r][k][r1] = new double [NSPECIES];
+	      for (int k1 = 0; k1<NSPECIES; k1++){
+	        MeanCov[r][k][r1][k1] = 0;
+  	      MeanFittedCov[r][k][r1][k1] = 0;
+  	      MeanCor[r][k][r1][k1] = 0;
+  	      MeanFittedCor[r][k][r1][k1] = 0;
+  	    }
       }
       for(int l=0; l<NLOCI; l++){
-//	Count[r][k][l] = new int [MAXNALLELE];
-//	Theta[r][k][l] = new double [MAXNALLELE];
-//	ExpTheta[r][k][l] = new double [MAXNALLELE];
-//	X[r][k][l] = new double [MAXNALLELE];
-	MeanFreq[r][k][l] = new double [MAXNALLELE];
-	MeanX[r][k][l] = new double [MAXNALLELE];
-	MeanX2[r][k][l] = new double [MAXNALLELE];
-	for(int j=0;j<MAXNALLELE;j++){	 
-	  Count[r][k][l][j] = 0;
-	  Theta[r][k][l][j] = Mu[l][j] + Nu[k][l][j];
-	  ExpTheta[r][k][l][j] = exp(Theta[r][k][l][j]);
-	  X[r][k][l][j] = 0;
-	  MeanFreq[r][k][l][j] = 0;
-	  MeanX[r][k][l][j] = 0;
-	  MeanX2[r][k][l][j] = 0;
-	}
-	LogLik[r][k][l] = 0;
-	SumCount[r][k][l] = 0;
-	SumExpTheta[r][k][l] = 0;	
+        MeanFreq[r][k][l] = new double [MAXNALLELE];
+        MeanX[r][k][l] = new double [MAXNALLELE];
+	      MeanX2[r][k][l] = new double [MAXNALLELE];
+	      for(int j=0;j<MAXNALLELE;j++){	 
+  	      Count[r][k][l][j] = 0;
+  	      Theta[r][k][l][j] = Mu[l][j] + Nu[k][l][j];
+  	      ExpTheta[r][k][l][j] = exp(Theta[r][k][l][j]);
+  	      X[r][k][l][j] = 0;
+  	      MeanFreq[r][k][l][j] = 0;
+  	      MeanX[r][k][l][j] = 0;
+  	      MeanX2[r][k][l][j] = 0;
+  	    }
+	      LogLik[r][k][l] = 0;
+	      SumCount[r][k][l] = 0;
+  	    SumExpTheta[r][k][l] = 0;	
       }
     }
   }
