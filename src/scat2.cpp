@@ -64,8 +64,6 @@ int READBOUNDARY = 0;
 int PERMUTE = 1;
 int VERBOSE = 0;
 
-char TAG = 'a'; // tag added to output files
-int OFFSET = 1; // start numbering output files from this number
 int OUTPUTSAMPLEFREQ = 0;
 double TEMPERATURE = 1; //0.0001;
 double ALPHAUPDATESD = 0.4;
@@ -2818,10 +2816,6 @@ int main ( int argc, char** argv)
       INCLUDENUGGET = 1;
       break;
 
-    case 'o':
-      ++argv; --argc; OFFSET = atoi(&argv[1][0]);
-      break;
-
     case 'p':
       PSEUDOCOUNT = atoi(&argv[1][2]);
       break;
@@ -2843,14 +2837,6 @@ int main ( int argc, char** argv)
       --argc;
       SEED = atoi(&argv[1][0]);
       break;
-
-      
-    case 't': //tag to use for location output files
-      ++argv;
-      --argc;
-      TAG = argv[1][0];
-      cerr << "tag = " << TAG << endl;
-	  break;
 
     case 'T': // number regions from 0
        ++argv;
