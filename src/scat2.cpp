@@ -1564,7 +1564,7 @@ void update_Lambda(double * Lambda, double Eta, double ** Psi, double ** ExpPsi,
     for(int ind=0; ind< NIND; ind++){
       int r0 = Region[ind];
       if(r0>=0){
-	if((Species[ind] == k))
+	if(Species[ind] == k)
 	  LogLikRatio += NewPsi[r0] - Psi[r0][k];
 	LogLikRatio += log(SumExpPsi[r0]) - log(NewSumExpPsi[r0]);
       }
@@ -1920,7 +1920,7 @@ void update_Location(vector<double> & Alpha, dregspeclocallele X, double ** Mu, 
 	    p2 = (1-DELTA) * ExpTheta[r][k][l][allele2]/SumExpTheta[r][k][l] + DELTA/Nallele[l];
 	  }
 	  
-	  if((allele1 == allele2)){
+	  if(allele1 == allele2){
 	    NewLogLik[l] += log(NULLPROB*Newp1 + (1-NULLPROB) * Newp1 * Newp1);
 	    LogLik[r][k][l] += log( NULLPROB*p1 + (1-NULLPROB) * p1 * p1);
 	  }
@@ -2438,7 +2438,7 @@ void update_YSingle(vector<double> & Delta, double ** Y, double ** Psi, double *
       for(int ind=0; ind< NIND; ind++){
 	int r0 = Region[ind];
 	if(r0 >= r){
-	  if((Species[ind] == k))
+	  if(Species[ind] == k)
 	    LogLikRatio += NewPsi[r0] - Psi[r0][k];
 	  LogLikRatio += log(SumExpPsi[r0]) - log(NewSumExpPsi[r0]);
 	}
