@@ -12,7 +12,7 @@
 \usepackage{amsmath}
 
 
-\def\SCAT{{\tt SCAT} }
+\def\SCAT{{\tt SCAT2} }
 \def\Di{{\cal D}}
 
 \def \Pr{{\rm Pr}}
@@ -23,16 +23,15 @@
 \pagenumbering{arabic}
 \begin{document}
 
-\title{Documentation for {\tt SCAT}, version 1.0.2}
+\title{Documentation for {\tt SCAT}, version 2}
 
 \author{
-Software code and documentation by Matthew Stephens\footnote{Address for correspondance:               Department of Statistics, University of Washington, Seattle.
-  email: {\tt stephens@stat.washington.edu};
-WWW: {\tt http://www.stat.washington.edu/stephens/}}\\
+Software code and documentation by Matthew Stephens\footnote{email: {\tt mstephens@uchicago.edu}}
+WWW: {\tt http://github.com/stephens999/scat}\\
 \\
 }
 
-\date{September 28 2004}
+\date{September 28 2004; updated September 15 2015; see scat2.readme.txt for updates to these instructions for v2 and up}
 
 \maketitle
 
@@ -56,9 +55,8 @@ and missing data are allowed. Details of the method are given in
 This document describes the use of this software, which comes free of
 charge, and with no warranty whatsoever.  Updates for the software
 will be made available via
-$$\text{{\tt http://www.stat.washington.edu/stephens/software.html}.}$$
-Please send bug reports, and requests for new features, to Matthew Stephens
-at the email address on the title page.
+$$\text{{\tt http://github.com/stephens999/scat}}$$
+Please send bug reports and requests for new features by opening an issue on that page.
 
 In publications including results from the use of this program, please
 {\it specify the version of the software you used}, and cite
@@ -71,10 +69,8 @@ In publications including results from the use of this program, please
 \section{Getting started: installing and running the software}
 \label{started}
 
-I distribute executables for \SCAT to run under Linux and
-Windows. Source code is not currently available. Please note: I
-perform almost all my testing under Linux, so you are highly
-recommended to use that version if at all possible.
+I distribute executables for \SCAT to run under MAC OSX.
+Source code is available on the github page. 
 
 The Linux executable comes in a gzipped tar file.
 Extract the files from the appropriate {\tt .tar.gz} file, by typing
@@ -146,20 +142,17 @@ boundaries of the habitat of the individuals being assigned - see
 section \ref{boundary}.  Instructions for how to prepare these files
 are given below. Once these files are created, you can run the program
 using
-$$\text{{\tt ./SCAT <genotype filename> <location filename> <output
-filename> N L S}}$$ where {\tt N} is the number of
-individuals and {\tt L} is the number of loci in the genotype file,
-and {\tt S} is the number of sampling locations in the location file.
+$$\text{{\tt ./SCAT2 <genotype filename> <location filename> <output
+filename> L}}$$ where {\tt L} is the number of loci in the genotype file.
 
 An example genotype file ({\tt test.genotype.txt})
 and an example location file {\tt test.location.txt} are supplied with
 the software.  You can run the program on the test data supplied by
 typing
-$$\text{{\tt ./SCAT test.genotype.txt test.location.txt test.out 7 2 3}}$$ 
+$$\text{{\tt ./SCAT2 test.genotype.txt test.location.txt test.out 2}}$$ 
 (make sure that {\tt SCAT}, {\tt test.genotype.txt}, and {\tt
-test.location.txt} are all in the current directory.)  Here the 7, 2
-and 3 indicate, respectively, that there are 7 individuals typed at 2
-loci in the genotype file, and 3 locations in the location file.
+test.location.txt} are all in the current directory.)  Here 2 indicates that there are 2
+loci in the genotype file.
 
 The program will input the data, perform a number of iterations, and
 output results to files with names of the form {\tt test.out\_xxx}.

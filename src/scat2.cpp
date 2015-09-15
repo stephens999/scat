@@ -2835,7 +2835,7 @@ int main ( int argc, char** argv)
       break;
 
 	case 's': // directory for output
-	  filenames["assigndir"] = argv[1]+2;
+	  filenames["outputdir"] = argv[1]+2;
 	  break;
 	  
     case 'S': // seed
@@ -2917,7 +2917,7 @@ int main ( int argc, char** argv)
 
   filenames["input"]  = argv[1];
   filenames["regions"] = argv[2];
-  filenames["output"] = argv[3];
+  filenames["outputdir"] = argv[3];
   
   //NIND = atoi(argv[4]);
   NLOCI = atoi(argv[4]);
@@ -2952,30 +2952,30 @@ int main ( int argc, char** argv)
   ifstream input (filenames["input"].c_str());
   ifstream regionfile (filenames["regions"].c_str());
   //string outputfilename = filenames["output"] + "_probs";
-  string outputfilename = filenames["assigndir"] + "/Output_probs";
+  string outputfilename = filenames["outputdir"] + "/Output_probs";
   ofstream output (outputfilename.c_str());
 
   ifstream assignfile (filenames["assignfile"].c_str());
   //string freqfilename = filenames["output"]+"_freqs";
-  string freqfilename = filenames["assigndir"] + "/Output_freqs";
+  string freqfilename = filenames["outputdir"] + "/Output_freqs";
   ofstream freqfile (freqfilename.c_str());
 
   //string acceptfilename = filenames["output"] + "_accept";
-  string acceptfilename = filenames["assigndir"] + "/Output_accept";
+  string acceptfilename = filenames["outputdir"] + "/Output_accept";
   ofstream acceptfile (acceptfilename.c_str());
 
   //string pifilename = filenames["output"] + "_pi";
-  string pifilename = filenames["assigndir"] + "/Output_pi";
+  string pifilename = filenames["outputdir"] + "/Output_pi";
   ofstream pifile;
   if(NSPECIES>1)
     pifile.open(pifilename.c_str());
 
   //string corrfilename = filenames["output"] + "_corr";
-  string corrfilename = filenames["assigndir"] + "/Output_corr";
+  string corrfilename = filenames["outputdir"] + "/Output_corr";
   ofstream corrfile (corrfilename.c_str());
 
   //string paramfilename = filenames["output"] + "_params";
-  string paramfilename = filenames["assigndir"] + "/Output_params";
+  string paramfilename = filenames["outputdir"] + "/Output_params";
   ofstream paramfile (paramfilename.c_str());
   ofstream Xfile (filenames["Xfile"].c_str());
   
@@ -3347,7 +3347,7 @@ int main ( int argc, char** argv)
   if(LOCATE){
     for(SAMPLETOLOCATE = FIRSTSAMPLETOLOCATE; SAMPLETOLOCATE <= LASTSAMPLETOLOCATE; SAMPLETOLOCATE++){
       
-      string LOCATEFILE(filenames["assigndir"]);
+      string LOCATEFILE(filenames["outputdir"]);
 	  LOCATEFILE.append("/");
       LOCATEFILE.append( Id[SAMPLETOLOCATE] );
       LOCACCEPT = 0;
