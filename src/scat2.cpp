@@ -1,6 +1,11 @@
+// scat2.cpp : Defines the entry point for the console application.
+//
+
+
+
+
 //#include "input.hpp"
 #include "utility.hpp"
-
 #include <string>
 #include <iostream>
 #include <fstream>
@@ -23,6 +28,22 @@ extern "C" void dpotrf_(
 using namespace std; 
 const double PI = 3.141592; 
     
+//const int MAXREGION = 100;
+const int MAXSPECIES = 2;
+const int MAXLOCI = 20;
+const int MAXNALLELE = 120; 
+
+typedef double dspeclocallele[MAXSPECIES][MAXLOCI][MAXNALLELE];
+typedef dspeclocallele* dregspeclocallele;
+typedef double dspecloc[MAXSPECIES][MAXLOCI];
+typedef dspecloc* dregspecloc;
+typedef int CountSpecLocAlleleType[MAXSPECIES][MAXLOCI][MAXNALLELE];
+typedef CountSpecLocAlleleType* CountType;
+typedef int SumCountSpecLocType[MAXSPECIES][MAXLOCI];
+typedef SumCountSpecLocType* SumCountType;
+
+const int ValidateAssumptions = 1;
+
 int USESUBREGION = 0; // indicates whether region file also holds subregion data
 int NSUBREGION = 6;
 
@@ -83,7 +104,6 @@ double XPROPOSALFACTOR = 0.5; // factor by which to multiply sd
 double YPROPOSALFACTOR = 0.5;
 
 int NIND;
-const int MAXNALLELE = 60; 
 int NREGION;
 int NSPECIES = 1;
 
@@ -499,6 +519,11 @@ void recode_genotypes(vector<vector<vector<int> > > & OriginalGenotype, vector<v
     }
     sort(AllelesPresent.begin(),AllelesPresent.end());
     Nallele.push_back(AllelesPresent.size());
+	
+	if( AllelesPresent.size() > MAXNALLELE ) {
+		cerr << "MAXNALLELE is insufficient: " << AllelesPresent.size()  << " needed." << endl;
+		exit(1);
+	}
 
     for(int allele =0; allele<AllelesPresent.size(); allele++){
       //cout << "Locus:" << locus << ",Allele:" << AllelesPresent[allele] << endl;
@@ -518,7 +543,7 @@ void recode_genotypes(vector<vector<vector<int> > > & OriginalGenotype, vector<v
 
 }
 
-void SubtractFromCount(int ind, int **** Count, int *** SumCount, vector<int> & Region, vector<int> & Species, vector<vector<vector<int> > > & Genotype)
+void SubtractFromCount(int ind, CountType Count, SumCountType SumCount, vector<int> & Region, vector<int> & Species, vector<vector<vector<int> > > & Genotype)
 {
   //cout << "Subtracting Ind " << ind << " from region " << Region[ind] << "," << Species[ind] << endl;
   if(Region[ind]>=0){
@@ -534,7 +559,7 @@ void SubtractFromCount(int ind, int **** Count, int *** SumCount, vector<int> & 
 }
 
 
-void AddToCount(int ind, int **** Count, int *** SumCount, vector<int> & Region, vector<int> & Species, vector<vector<vector< int> > > & Genotype)
+void AddToCount(int ind, CountType Count, SumCountType SumCount, vector<int> & Region, vector<int> & Species, vector<vector<vector< int> > > & Genotype)
 {
   if(Region[ind]>=0){
     for(int chrom=0; chrom<2; chrom++){
@@ -550,7 +575,7 @@ void AddToCount(int ind, int **** Count, int *** SumCount, vector<int> & Region,
 }
 
 
-void count_up_alleles(int **** Count, vector<int> & Region, vector<int> & Species, vector<vector<vector< int> > > & Genotype)
+void count_up_alleles(CountType Count, vector<int> & Region, vector<int> & Species, vector<vector<vector< int> > > & Genotype)
 {
   for(int r=0; r<NREGION; r++){
     for(int k=0; k< NSPECIES; k++){
@@ -576,7 +601,7 @@ void count_up_alleles(int **** Count, vector<int> & Region, vector<int> & Specie
   }
 }
 
-void calc_SumCount(int **** Count, int *** SumCount)
+void calc_SumCount(CountType Count, SumCountType SumCount)
 {
   for(int r=0; r<NREGION; r++){
     for(int k=0; k<NSPECIES; k++){
@@ -592,7 +617,7 @@ void calc_SumCount(int **** Count, int *** SumCount)
 
 // compute "whichrun" type probability for
 // individual
-double simple_Prob(int **** Count, int *** SumCount,vector<vector<vector<int> > > &  Genotype, int ** Coding, int ind, int r)
+double simple_Prob(CountType Count, SumCountType SumCount,vector<vector<vector<int> > > &  Genotype, int ** Coding, int ind, int r)
 {
   int k=0;
   double prob = 1;
@@ -620,7 +645,7 @@ double simple_Prob(int **** Count, int *** SumCount,vector<vector<vector<int> > 
 
 
 // compute prob of individual's genotype as hybrid of region r and s
-double log_hybrid_Prob(int **** Count, int *** SumCount,vector<vector<vector< int> > > &  Genotype, int ** Coding, int ind, int r, int s)
+double log_hybrid_Prob(CountType Count, SumCountType SumCount,vector<vector<vector< int> > > &  Genotype, int ** Coding, int ind, int r, int s)
 {
   int k=0;
 
@@ -637,6 +662,7 @@ double log_hybrid_Prob(int **** Count, int *** SumCount,vector<vector<vector< in
 	llocusprob += log( NULLPROB * 0.5 * (pr0 + ps0) + (1-NULLPROB) * (pr0 * ps0));
       else{
 	double mult = 1;
+	if(r==s) mult = 0.5;
 	llocusprob += log((1-NULLPROB) * mult * (pr0 * ps1 + pr1 * ps0));
       }
     }
@@ -666,6 +692,7 @@ double log_hybrid_Prob(double **** Freq,vector<vector<vector<int> > > & Genotype
 	llocusprob += log( NULLPROB * 0.5 * (pr0 + ps0) + (1-NULLPROB) * (pr0 * ps0));
       else{
 	double mult = 1;
+	if(r==s) mult = 0.5;
 	llocusprob += log((1-NULLPROB) * mult * (pr0 * ps1 + pr1 * ps0));
       }
     }
@@ -691,7 +718,7 @@ double log_hybrid_Prob(double **** Freq,vector<vector<vector<int> > > & Genotype
 //   }
 // }
 
-void calc_ExpTheta_and_SumExpTheta(double **** Theta, double **** ExpTheta, double *** SumExpTheta)
+void calc_ExpTheta_and_SumExpTheta(dregspeclocallele Theta, dregspeclocallele ExpTheta, dregspecloc SumExpTheta)
 {
   for(int r=0; r<NREGION; r++){
     for(int k=0; k<NSPECIES; k++){
@@ -706,7 +733,7 @@ void calc_ExpTheta_and_SumExpTheta(double **** Theta, double **** ExpTheta, doub
   }
 }
 
-void output_counts(int **** Count, vector<int> & Perm)
+void output_counts(CountType Count, vector<int> & Perm)
 {
   for(int r=0; r<NREGION; r++){
     for(int k=0; k<NSPECIES; k++){
@@ -735,7 +762,7 @@ double FittedCovariance(vector<double> & Alpha, double d){
 
 
 // (sample) covariance of thetas in region r0 and r1; species k0 and k1
-double Covariance(int r0, int k0, int r1, int k1, double **** Theta, double ** Mu, double *** Nu){
+double Covariance(int r0, int k0, int r1, int k1, dregspeclocallele Theta, double ** Mu, double *** Nu){
 
   double Er0k0 = 0; //Expectation of Theta-mu-Nu in r0,k0
   double Er1k1 = 0;
@@ -791,7 +818,7 @@ double Correlation(int r0, int k0, int r1, int k1, double **** Theta, double ** 
 }
 
 // (sample) covariance of thetas at locus "locus" in region r0 and r1; species k0 and k1
-double Covariance(int locus, int r0, int k0, int r1, int k1, double **** Theta, double ** Mu, double *** Nu){
+double Covariance(int locus, int r0, int k0, int r1, int k1, dregspeclocallele Theta, double ** Mu, double *** Nu){
 
   double Er0k0 = 0; //Expectation of Theta-mu in r0,k0
   double Er1k1 = 0;
@@ -898,7 +925,7 @@ void calc_L(double * L,vector<double> & Alpha, vector<double> & Xcoord, vector<d
  
 
 double CurrentLogLik(double *** LogLik, int r){
-  double sum;
+  double sum = 0.0;
   for(int l=0; l<NLOCI; l++){
 	  sum += LogLik[r][0][l];
   }
@@ -909,7 +936,7 @@ double CurrentLogLik(double *** LogLik, int r){
 // compute the Loglikelihood
 // LogLik[r][k][l] holds the loglikelihood for individuals in region r, 
 // species k, at locus l
-void calc_LogLik(double *** LogLik,double **** Theta, double *** SumExpTheta, int **** Count, int *** SumCount){
+void calc_LogLik( dregspecloc LogLik, dregspeclocallele Theta, dregspecloc SumExpTheta, CountType Count, SumCountType SumCount){
   double loglik = 0;
   for(int r=0; r<NREGION; r++){
     for(int k=0; k<NSPECIES; k++){
@@ -935,7 +962,7 @@ void calc_LogLik(double *** LogLik,double **** Theta, double *** SumExpTheta, in
 
 
 //used in testing: compute the Loglikelihood but with the pseudocounts, if any, removed
-double calc_LogLikWithoutPseudoCounts(double **** Theta, double *** SumExpTheta, int **** Count, int *** SumCount){
+double calc_LogLikWithoutPseudoCounts(dregspeclocallele Theta, dregspecloc SumExpTheta, CountType Count, SumCountType SumCount){
   double loglik = 0;
   for(int r=0; r<NREGION; r++){
     for(int k=0; k<NSPECIES; k++){
@@ -953,7 +980,7 @@ double calc_LogLikWithoutPseudoCounts(double **** Theta, double *** SumExpTheta,
 
 
 // Compute overall loglikelihood by summing the array LogLik
-double SumLogLik(double *** LogLik){
+double SumLogLik(dregspecloc LogLik){
   double loglik = 0;
   for(int r=0; r<NREGION; r++){
     for(int k=0; k<NSPECIES; k++){
@@ -1000,7 +1027,7 @@ void CheckSumExpTheta(double **** ExpTheta, double *** SumExpTheta)
 //
 // keep a running count of the posterior means of some of the quantities
 //
-void UpdateMeans(double **** ExpTheta,double **** X, vector<vector<double> > & Pi, double *** SumExpTheta, double **** MeanFreq, double **** MeanX, double **** MeanX2, vector<vector<double> > & MeanPi, double **** MeanCov, double **** MeanFittedCov, double **** MeanCor, double **** MeanFittedCor, vector<double> & Alpha, vector<double> & Xcoord, vector<double> & Ycoord, double **** Theta, double ** Mu, double *** Nu)
+void UpdateMeans(dregspeclocallele ExpTheta,dregspeclocallele X, vector<vector<double> > & Pi, dregspecloc SumExpTheta, double **** MeanFreq, double **** MeanX, double **** MeanX2, vector<vector<double> > & MeanPi, double **** MeanCov, double **** MeanFittedCov, double **** MeanCor, double **** MeanFittedCor, vector<double> & Alpha, vector<double> & Xcoord, vector<double> & Ycoord, dregspeclocallele Theta, double ** Mu, double *** Nu)
 {
   for(int r=0;r<NREGION;r++){
     for(int k=0; k<NSPECIES; k++){
@@ -1035,7 +1062,7 @@ void UpdateMeans(double **** ExpTheta,double **** X, vector<vector<double> > & P
 // (trying to assign each individual to one or other region/species on the basis
 // of its genotype)
 // Compute prob of individual ind's genotype, for each subregion, species combination
-void UpdateSubRegionProb(double **** ExpTheta, double *** SumExpTheta, double *** SubRegionProb, vector<vector<vector<int> > > & Genotype, vector<int> & SubRegion)
+void UpdateSubRegionProb(dregspeclocallele ExpTheta, dregspecloc SumExpTheta, double *** SubRegionProb, vector<vector<vector<int> > > & Genotype, vector<int> & SubRegion)
 {
   for(int ind = 0; ind < NIND; ind++){
     for(int r=0;r<NREGION;r++){
@@ -1057,7 +1084,7 @@ void UpdateSubRegionProb(double **** ExpTheta, double *** SumExpTheta, double **
 
 
 // Compute prob of individual ind's genotype, at each locus, for each region, species combination.
-void UpdateLocusMeanProb(int ind, double **** ExpTheta, double *** SumExpTheta, double **** LocusMeanProb, vector<vector<vector<int> > > & Genotype)
+void UpdateLocusMeanProb(int ind, dregspeclocallele ExpTheta, dregspecloc SumExpTheta, double **** LocusMeanProb, vector<vector<vector<int> > > & Genotype)
 { 
   //  cout << "Ind = " << ind << endl;
   double llocusprob;
@@ -1098,7 +1125,7 @@ void UpdateLocusMeanProb(int ind, double **** ExpTheta, double *** SumExpTheta, 
 }
 
 // compute probs for all individuals
-void UpdateLocusMeanProb(double **** ExpTheta, double *** SumExpTheta, double **** LocusMeanProb, vector<vector<vector<int> > > & Genotype)
+void UpdateLocusMeanProb(dregspeclocallele ExpTheta, dregspecloc SumExpTheta, double **** LocusMeanProb, vector<vector<vector<int> > > & Genotype)
 { 
   for(int ind =0; ind< NIND; ind++){
     UpdateLocusMeanProb(ind, ExpTheta, SumExpTheta, LocusMeanProb, Genotype);
@@ -1336,7 +1363,7 @@ void OutputLogMeanProb2(double **** MeanFreq, vector<vector<vector<int> > > & Ge
 }
 
 
-void OutputParameters(ofstream & paramfile, vector<double> & Alpha, double & Beta, vector<double> & Gamma, vector<double> & Delta, double & Eta,double * Lambda, double *** LogLik)
+void OutputParameters(ofstream & paramfile, vector<double> & Alpha, double & Beta, vector<double> & Gamma, vector<double> & Delta, double & Eta,double * Lambda, dregspecloc LogLik)
 {
   for(int a = 0; a < Alpha.size(); a++)
     paramfile << Alpha[a] << " ";
@@ -1380,7 +1407,7 @@ void OutputTheta(double **** Theta, ostream & output, int ** Coding,vector<int> 
 // update vector of allocation variables (Species) which holds
 // which species (= subpopulation) each individual is currently
 // assigned to
-void update_Species(vector<int> & Species, vector< vector<double> > & Pi, vector<int> & Region, vector<vector<vector<int> > > & Genotype, double **** ExpTheta, double *** SumExpTheta)
+void update_Species(vector<int> & Species, vector< vector<double> > & Pi, vector<int> & Region, vector<vector<vector<int> > > & Genotype, dregspeclocallele ExpTheta, dregspecloc SumExpTheta)
 {
   vector<double> Prob(NSPECIES,0);
   for(int ind=0; ind<NIND; ind++){
@@ -1430,7 +1457,7 @@ void update_Pi(vector< vector<double> > & Pi, vector<int> & Species, vector<int>
 
 
 // update Nu (the species-specific adjustment to the background "ancestral" allele freqs)
-void update_Nu(double *** Nu, vector<double> & Gamma, double **** Theta, double **** ExpTheta, double *** LogLik, double *** SumExpTheta, int **** Count, int *** SumCount,
+void update_Nu(double *** Nu, vector<double> & Gamma, dregspeclocallele Theta, dregspeclocallele ExpTheta, dregspecloc LogLik, dregspecloc SumExpTheta, CountType Count, SumCountType SumCount,
 vector <vector<double> > & NewTheta,vector <vector<double> > & NewExpTheta,vector <vector<double> > & NewSumExpTheta,vector <vector<double> > & NewLogLik )
 {
 
@@ -1475,7 +1502,7 @@ vector <vector<double> > & NewTheta,vector <vector<double> > & NewExpTheta,vecto
 
 
 // update Mu (the background "ancestral" allele freqs)
-void update_Mu(double ** Mu, double Beta, double **** Theta, double **** ExpTheta, double *** LogLik, double *** SumExpTheta, int **** Count, int *** SumCount,
+void update_Mu(double ** Mu, double Beta, dregspeclocallele Theta, dregspeclocallele ExpTheta, dregspecloc LogLik, dregspecloc SumExpTheta, CountType Count, SumCountType SumCount,
 vector <vector<double> > & NewTheta,vector <vector<double> > & NewExpTheta,vector <vector<double> > & NewSumExpTheta,vector <vector<double> > & NewLogLik )
 {
 
@@ -1539,7 +1566,7 @@ void update_Lambda(double * Lambda, double Eta, double ** Psi, double ** ExpPsi,
     for(int ind=0; ind< NIND; ind++){
       int r0 = Region[ind];
       if(r0>=0){
-	if(Species[ind] == k)
+	if((Species[ind] == k))
 	  LogLikRatio += NewPsi[r0] - Psi[r0][k];
 	LogLikRatio += log(SumExpPsi[r0]) - log(NewSumExpPsi[r0]);
       }
@@ -1561,7 +1588,7 @@ void update_Lambda(double * Lambda, double Eta, double ** Psi, double ** ExpPsi,
   
 }
 
-void update_Alpha0(vector<double> & Alpha, double **** X)
+void update_Alpha0(vector<double> & Alpha, dregspeclocallele X)
 {
   double sum = 0;
   double sumsq = 0;
@@ -1768,7 +1795,7 @@ bool InForest(double x,double y){
 
 
 // update location of the sample whose location is being estimated
-void update_Location(vector<double> & Alpha, double **** X, double ** Mu, double *** Nu, double **** Theta, double **** ExpTheta, double *** LogLik, double *** SumExpTheta, int **** Count, int *** SumCount, double * L, vector<double> & Xcoord, vector<double> & Ycoord, vector<int> & Species, vector<vector<vector<int> > > & Genotype, vector<int> & Region, vector<double> & BoundaryX, vector<double> & BoundaryY)
+void update_Location(vector<double> & Alpha, dregspeclocallele X, double ** Mu, double *** Nu, dregspeclocallele Theta, dregspeclocallele ExpTheta, dregspecloc LogLik, dregspecloc SumExpTheta, CountType Count, SumCountType SumCount, double * L, vector<double> & Xcoord, vector<double> & Ycoord, vector<int> & Species, vector<vector<vector<int> > > & Genotype, vector<int> & Region, vector<double> & BoundaryX, vector<double> & BoundaryY)
 {
   double ** NewTheta = new double * [NLOCI];
   double ** NewExpTheta = new double * [NLOCI];
@@ -1895,7 +1922,7 @@ void update_Location(vector<double> & Alpha, double **** X, double ** Mu, double
 	    p2 = (1-DELTA) * ExpTheta[r][k][l][allele2]/SumExpTheta[r][k][l] + DELTA/Nallele[l];
 	  }
 	  
-	  if(allele1 == allele2){
+	  if((allele1 == allele2)){
 	    NewLogLik[l] += log(NULLPROB*Newp1 + (1-NULLPROB) * Newp1 * Newp1);
 	    LogLik[r][k][l] += log( NULLPROB*p1 + (1-NULLPROB) * p1 * p1);
 	  }
@@ -1971,39 +1998,70 @@ void update_Location(vector<double> & Alpha, double **** X, double ** Mu, double
 
 // update the parameters in the covariance matrix (would be neater
 // not to declare and delete memory every time!)
-void update_Alpha(vector<double> & Alpha, double **** X, double ** Mu, double *** Nu, double **** Theta, double **** ExpTheta, double *** LogLik, double *** SumExpTheta, int **** Count, int *** SumCount, double * L, vector<double> & Xcoord, vector<double> & Ycoord)
+void update_Alpha(vector<double> & Alpha, dregspeclocallele X, double ** Mu, double *** Nu, dregspeclocallele Theta, dregspeclocallele ExpTheta, dregspecloc LogLik, dregspecloc SumExpTheta, CountType Count, SumCountType SumCount, double * L, vector<double> & Xcoord, vector<double> & Ycoord)
 {
-  double **** NewTheta = new double *** [NREGION];
-  double **** NewExpTheta = new double *** [NREGION];
-  double *** NewLogLik = new double ** [NREGION];
-  double *** NewSumExpTheta = new double ** [NREGION];
+static	dregspeclocallele NewTheta;
+static	dregspeclocallele NewExpTheta;
+static	dregspecloc NewLogLik;
+static	dregspecloc NewSumExpTheta;
+static double* NewL;
+
+static int FirstTime = 1;
+static int FirstNREGION;
+static int RecursionCheck = 0;
+
+	if( FirstTime == 1 ) {
+ 		NewTheta = new dspeclocallele[NREGION];
+ 		NewExpTheta = new dspeclocallele[NREGION];
+ 		NewLogLik = new dspecloc[NREGION];
+ 		NewSumExpTheta = new dspecloc[NREGION];
+ 		NewL = new double[NREGION*NREGION];
+ 		FirstNREGION = NREGION;
+ 		FirstTime = 0;
+ 	}
+ 	if( ValidateAssumptions ) {
+ 		if( RecursionCheck++ > 1 || NREGION !=FirstNREGION ) {
+ 			cerr << "Assumption violated" << endl;
+ 			exit(1);
+ 		}
+ 	}
+
+//   memset( (void*)NewTheta, 0, NREGION*sizeof (dspeclocallele) );	// inspection indicates these are not needed
+//   memset( (void*)NewLogLik, 0, NREGION*sizeof (dregspecloc) );	
+//   memset( (void*)NewSumExpTheta, 0, NREGION*sizeof (dregspecloc) );	
+
+   //double **** NewTheta = new double *** [NREGION];
+  //double **** NewExpTheta = new double *** [NREGION];
+  //double *** NewLogLik = new double ** [NREGION];
+  //double *** NewSumExpTheta = new double ** [NREGION];
   
   update_Alpha0(Alpha, X);
 
-  for(int r=0; r<NREGION; r++){
-    NewTheta[r] = new double ** [NSPECIES];
-    NewExpTheta[r] = new double ** [NSPECIES];    
-    NewLogLik[r] = new double * [NSPECIES];
-    NewSumExpTheta[r] = new double * [NSPECIES];
-    for(int k=0; k<NSPECIES; k++){
-      NewTheta[r][k] = new double * [NLOCI];
-      NewExpTheta[r][k] = new double * [NLOCI]; 
-      NewLogLik[r][k] = new double [NLOCI];
-      NewSumExpTheta[r][k] = new double  [NLOCI];
-      for(int l=0; l<NLOCI; l++){
-	NewTheta[r][k][l] = new double [MAXNALLELE];
-	NewExpTheta[r][k][l] = new double [MAXNALLELE];	
-	for(int j=0;j<MAXNALLELE;j++){	 
-	  NewTheta[r][k][l][j] = 0;
-	  NewExpTheta[r][k][l][j] = 1;
-	}
-	NewLogLik[r][k][l] = 0;
-	NewSumExpTheta[r][k][l] = 0;	
-      }
-    }
-  }
+  
+//  for(int r=0; r<NREGION; r++){	//inspection again
+//		NewTheta[r] = new double ** [NSPECIES];
+//		NewExpTheta[r] = new double ** [NSPECIES];    
+//		NewLogLik[r] = new double * [NSPECIES];
+//		NewSumExpTheta[r] = new double * [NSPECIES];
+//		for(int k=0; k<NSPECIES; k++){
+//			  NewTheta[r][k] = new double * [NLOCI];
+//			  NewExpTheta[r][k] = new double * [NLOCI]; 
+//			  NewLogLik[r][k] = new double [NLOCI];
+//			  NewSumExpTheta[r][k] = new double  [NLOCI];
+//			  for(int l=0; l<NLOCI; l++){
+//					NewTheta[r][k][l] = (double *) calloc(Nallele[l] , sizeof(double)); //new double [MAXNALLELE]; Changed Nov 5 2012.
+//					NewExpTheta[r][k][l] = (double *) calloc(Nallele[l] , sizeof(double)); //new double [MAXNALLELE];	
+//					for(int j=0;j<Nallele[l];j++){	 
+						//NewTheta[r][k][l][j] = 0;
+//						NewExpTheta[r][k][l][j] = 1;
+//					}
+					//NewLogLik,NewLogLik[r][k][l] = 0;
+					//NewSumExpTheta[r][k][l] = 0;	
+//			  }
+//		}
+//  }
     
-  double * NewL = new double [NREGION * NREGION];
+  //double * NewL = new double [NREGION * NREGION];
   
   
   for(int alphaparam = 1; alphaparam < ALPHALENGTH; alphaparam++){
@@ -2088,28 +2146,32 @@ void update_Alpha(vector<double> & Alpha, double **** X, double ** Mu, double **
     }
   }
 
-  for(int r=0; r<NREGION; r++){
-    for(int k=0; k<NSPECIES; k++){
-      for(int l=0; l<NLOCI; l++){
-	delete [] NewTheta[r][k][l];
-	delete [] NewExpTheta[r][k][l];
-      }
-      delete [] NewTheta[r][k];
-      delete [] NewExpTheta[r][k];
-      delete [] NewLogLik[r][k];
-      delete [] NewSumExpTheta[r][k];
-    }
-    delete [] NewTheta[r];
-    delete [] NewExpTheta[r];
-    delete [] NewLogLik[r];
-    delete [] NewSumExpTheta[r];
-  }
+//  for(int r=0; r<NREGION; r++){
+//    for(int k=0; k<NSPECIES; k++){
+//      for(int l=0; l<NLOCI; l++){
+			//delete [] NewTheta[r][k][l];
+			//delete [] NewExpTheta[r][k][l];
+			//free (NewTheta[r][k][l]);
+			//free (NewExpTheta[r][k][l]);
+//      }
+//      delete [] NewTheta[r][k];
+//      delete [] NewExpTheta[r][k];
+//      delete [] NewLogLik[r][k];
+//      delete [] NewSumExpTheta[r][k];
+//    }
+//    delete [] NewTheta[r];
+//    delete [] NewExpTheta[r];
+//    delete [] NewLogLik[r];
+//    delete [] NewSumExpTheta[r];
+//  }
 	
-  delete [] NewTheta;
-  delete [] NewExpTheta;
-  delete [] NewSumExpTheta;
-  delete [] NewLogLik;
-  delete [] NewL;
+//  delete [] NewTheta;
+//  delete [] NewExpTheta;
+//  delete [] NewSumExpTheta;
+//  delete [] NewLogLik;
+//  delete [] NewL;
+
+  if( ValidateAssumptions ) RecursionCheck--;
 
 }
 // update the parameters in the covariance matrix M (would be neater
@@ -2214,7 +2276,7 @@ void update_Delta(vector<double> & Delta, double ** Y, double * Lambda, double *
 }
 
 // derivative of LogLik with respect to x(r,k,l,j) 
-double divLogLikValue(int r, int k, int l, int j, double **** ExpTheta, double *** SumExpTheta, int **** Count, int *** SumCount, double * L)
+double divLogLikValue(int r, int k, int l, int j, dregspeclocallele ExpTheta, dregspecloc SumExpTheta, CountType Count, SumCountType SumCount, double * L)
 {
   double sum = 0;
   for(int s=r; s<NREGION; s++){
@@ -2223,7 +2285,7 @@ double divLogLikValue(int r, int k, int l, int j, double **** ExpTheta, double *
   return sum;
 }
 
-double calcNewdivLogLik(int r, int k, int l, int j, double * ExpTheta, double * SumExpTheta, int **** Count, int *** SumCount, double * L)
+double calcNewdivLogLik(int r, int k, int l, int j, double * ExpTheta, double * SumExpTheta, CountType Count, SumCountType SumCount, double * L)
 {
   double sum = 0;
   for(int s=r; s<NREGION; s++){
@@ -2234,7 +2296,7 @@ double calcNewdivLogLik(int r, int k, int l, int j, double * ExpTheta, double * 
 
 
 // update the Xs for a particular allele and locus, in a particular species, across all regions at once
-void update_XJoint(vector<double> & Alpha, double **** X, double ** Mu, double *** Nu,  double **** Theta, double **** ExpTheta, double *** LogLik, double *** SumExpTheta, int **** Count, int *** SumCount, double * L)
+void update_XJoint(vector<double> & Alpha, dregspeclocallele X, double ** Mu, double *** Nu,  dregspeclocallele Theta, dregspeclocallele ExpTheta, dregspecloc LogLik, dregspecloc SumExpTheta, CountType Count, SumCountType SumCount, double * L)
 {
 
   double * NewTheta = new double [NREGION];
@@ -2316,17 +2378,36 @@ void update_XJoint(vector<double> & Alpha, double **** X, double ** Mu, double *
 }
 
 // update each X individually (better acceptance rate/ larger proposal variance,// but more likelihood evaluations!)
-void update_XSingle(vector<double> & Alpha, double **** X, double ** Mu, double *** Nu, double **** Theta, double **** ExpTheta, double *** LogLik, double *** SumExpTheta, int **** Count, int *** SumCount, double * L)
+void update_XSingle(vector<double> & Alpha, dregspeclocallele X, double ** Mu, double *** Nu, dregspeclocallele Theta, dregspeclocallele ExpTheta, dregspecloc LogLik, dregspecloc SumExpTheta, CountType Count, SumCountType SumCount, double * L)
 {
 
-  double * NewTheta = new double [NREGION];
-  double * NewExpTheta =  new double [NREGION];
-  double * NewSumExpTheta = new double [NREGION];
-  double * NewLogLik = new double [NREGION];
-  double NewX;
+   static double *NewTheta;
+   static double *NewExpTheta;
+   static double *NewSumExpTheta;
+   static double *NewLogLik;
+ 
+   static int FirstTime = 1;
+   static int FirstNREGION;
+   static int RecursionCheck = 0;
+
+   double NewX;
   double NewdivLogLik;
   double h = XPROPOSALFACTOR * sqrt(1.0/Alpha[0]);
 
+     if( FirstTime == 1 ) {
+ 	  NewTheta = new double[NREGION];
+ 	  NewExpTheta = new double[NREGION];
+ 	  NewSumExpTheta = new double[NREGION];
+ 	  NewLogLik = new double[NREGION];
+ 	  FirstNREGION = NREGION;
+ 	  FirstTime = 0;
+   }
+   if( ValidateAssumptions ) {
+ 	  if( RecursionCheck++ > 1 || NREGION != FirstNREGION ) {
+ 		  cerr << "Assumption violated" << endl;
+ 		  exit(1);
+ 	  }
+   }
 
   for(int k=0; k<NSPECIES; k++){
     for(int l=0; l<NLOCI; l++){
@@ -2386,11 +2467,12 @@ void update_XSingle(vector<double> & Alpha, double **** X, double ** Mu, double 
       }
     }
   }
+  //delete [] NewTheta;
+  //delete [] NewExpTheta;
+  //delete [] NewSumExpTheta;
+  //delete [] NewLogLik;
 
-  delete [] NewTheta;
-  delete [] NewExpTheta;
-  delete [] NewSumExpTheta;
-  delete [] NewLogLik;
+  if( ValidateAssumptions ) RecursionCheck--;
 
 }
 
@@ -2423,7 +2505,7 @@ void update_YSingle(vector<double> & Delta, double ** Y, double ** Psi, double *
       for(int ind=0; ind< NIND; ind++){
 	int r0 = Region[ind];
 	if(r0 >= r){
-	  if(Species[ind] == k)
+	  if((Species[ind] == k))
 	    LogLikRatio += NewPsi[r0] - Psi[r0][k];
 	  LogLikRatio += log(SumExpPsi[r0]) - log(NewSumExpPsi[r0]);
 	}
@@ -2454,7 +2536,7 @@ void update_YSingle(vector<double> & Delta, double ** Y, double ** Psi, double *
 }
 
 
-void DoAllUpdates(double **** X, double & Beta,  vector<double> & Gamma, vector<double> & Alpha,  double ** Mu, double *** Nu, double **** Theta, double **** ExpTheta, double *** LogLik, double *** SumExpTheta, int **** Count, int *** SumCount, double * L, vector<vector<vector<int> > > & Genotype, vector<int> & Region, vector<int> & Species, vector<vector<double> > & Pi, vector<double> & Xcoord, vector<double> & Ycoord,vector <vector<double> > & NewTheta,vector <vector<double> > & NewExpTheta,vector <vector<double> > & NewSumExpTheta,vector <vector<double> > & NewLogLik, double ** Y, double & Eta, vector<double> & Delta, double * Lambda, double ** Psi, double ** ExpPsi, double * SumExpPsi, double * M,  vector<double>  & NewPsi,vector<double>  & NewExpPsi,vector<double> & NewSumExpPsi,vector<double> & BoundaryX, vector<double> & BoundaryY )
+void DoAllUpdates(dregspeclocallele X, double & Beta,  vector<double> & Gamma, vector<double> & Alpha,  double ** Mu, double *** Nu, dregspeclocallele Theta, dregspeclocallele ExpTheta, dregspecloc LogLik, dregspecloc SumExpTheta, CountType Count, SumCountType SumCount, double * L, vector<vector<vector<int> > > & Genotype, vector<int> & Region, vector<int> & Species, vector<vector<double> > & Pi, vector<double> & Xcoord, vector<double> & Ycoord,vector <vector<double> > & NewTheta,vector <vector<double> > & NewExpTheta,vector <vector<double> > & NewSumExpTheta,vector <vector<double> > & NewLogLik, double ** Y, double & Eta, vector<double> & Delta, double * Lambda, double ** Psi, double ** ExpPsi, double * SumExpPsi, double * M,  vector<double>  & NewPsi,vector<double>  & NewExpPsi,vector<double> & NewSumExpPsi,vector<double> & BoundaryX, vector<double> & BoundaryY )
 {
   if(UPDATEBETA ==1)
     update_Beta(Beta,Mu);
@@ -2497,7 +2579,7 @@ void DoAllUpdates(double **** X, double & Beta,  vector<double> & Gamma, vector<
  
 }
 
-void InitialiseTheta(double **** Theta, double **** X,double ** Mu, double *** Nu, double * L){
+void InitialiseTheta(dregspeclocallele Theta, dregspeclocallele X,double ** Mu, double *** Nu, double * L){
   
   for(int r=0; r<NREGION; r++){
     for(int k=0; k<NSPECIES; k++){
@@ -2513,7 +2595,7 @@ void InitialiseTheta(double **** Theta, double **** X,double ** Mu, double *** N
   }
 }
 
-void Initialise(double **** X, double & Beta,  vector<double> & Gamma, vector<double> & Alpha,  double ** Mu, double *** Nu, double **** Theta, double * L, vector<double> & Xcoord, vector<double> & Ycoord){ 
+void Initialise(dregspeclocallele X, double & Beta,  vector<double> & Gamma, vector<double> & Alpha,  double ** Mu, double *** Nu, dregspeclocallele Theta, double * L, vector<double> & Xcoord, vector<double> & Ycoord){ 
 
   if(INCLUDENUGGET)
     Alpha[3] = 1.0;
@@ -2656,7 +2738,7 @@ void Initialise(double **** X, double & Beta,  vector<double> & Gamma, vector<do
 }
 
 
-void output_empirical_freqs(vector<string> & RegionName,vector<int> & Perm,int ** Coding,int **** Count,int *** SumCount){
+void output_empirical_freqs(vector<string> & RegionName,vector<int> & Perm,int ** Coding,CountType Count,SumCountType SumCount){
 	
  	cout << "Empirical Frequencies:" << endl;
     for(int l=0;l<NLOCI; l++){
@@ -2895,8 +2977,18 @@ int main ( int argc, char** argv)
     exit(1);
   }
 
-  
+  if( NLOCI > MAXLOCI ) {
+	  cerr << "MAXLOCI is insufficient: " << NLOCI << " needed." << endl;
+	  exit(1);
+  }
+  if( NSPECIES > MAXSPECIES ) {
+	  cerr << "MAXSPECIES is insufficient: " << NSPECIES << " needed." << endl;
+	  exit(1);
+  }
+
+  cout << "MAXNALLELE = " << MAXNALLELE <<endl;
   init_genrand(SEED);
+
   filenames["input"]  = argv[1];
   filenames["regions"] = argv[2];
   filenames["output"] = argv[3];
@@ -2925,25 +3017,31 @@ int main ( int argc, char** argv)
 
   ifstream input (filenames["input"].c_str());
   ifstream regionfile (filenames["regions"].c_str());
-  string outputfilename = filenames["output"] + "_probs";
+  //string outputfilename = filenames["output"] + "_probs";
+  string outputfilename = filenames["assigndir"] + "/Output_probs";
   ofstream output (outputfilename.c_str());
 
   ifstream assignfile (filenames["assignfile"].c_str());
-  string freqfilename = filenames["output"]+"_freqs";
+  //string freqfilename = filenames["output"]+"_freqs";
+  string freqfilename = filenames["assigndir"] + "/Output_freqs";
   ofstream freqfile (freqfilename.c_str());
 
-  string acceptfilename = filenames["output"] + "_accept";
+  //string acceptfilename = filenames["output"] + "_accept";
+  string acceptfilename = filenames["assigndir"] + "/Output_accept";
   ofstream acceptfile (acceptfilename.c_str());
 
-  string pifilename = filenames["output"] + "_pi";
+  //string pifilename = filenames["output"] + "_pi";
+  string pifilename = filenames["assigndir"] + "/Output_pi";
   ofstream pifile;
   if(NSPECIES>1)
     pifile.open(pifilename.c_str());
 
-  string corrfilename = filenames["output"] + "_corr";
+  //string corrfilename = filenames["output"] + "_corr";
+  string corrfilename = filenames["assigndir"] + "/Output_corr";
   ofstream corrfile (corrfilename.c_str());
 
-  string paramfilename = filenames["output"] + "_params";
+  //string paramfilename = filenames["output"] + "_params";
+  string paramfilename = filenames["assigndir"] + "/Output_params";
   ofstream paramfile (paramfilename.c_str());
   ofstream Xfile (filenames["Xfile"].c_str());
   
@@ -3040,8 +3138,10 @@ int main ( int argc, char** argv)
   // declare memory
   // Count[r][k][l][j] is number of allele j in region r, species k, locus l
   // SumCount[r][k][l] is the sum of Count over j
-  int **** Count = new int *** [NREGION];
-  int *** SumCount = new int ** [NREGION];
+  static CountType Count;
+  Count = new CountSpecLocAlleleType[NREGION];
+  static SumCountType SumCount;
+  SumCount = new SumCountSpecLocType[NREGION];
 
   // Theta[r][k][l][j] is log relative freq of allele j in region r,
   // species k, locus l
@@ -3053,10 +3153,16 @@ int main ( int argc, char** argv)
   // L is the (lower-triangular) Cholesky decomposition of the covariance of the thetas
   // mu is a priori N(0,1/beta), where beta is a priori Gamma(NBETA,LBETA)
 
-  double **** Theta = new double *** [NREGION];
-  double **** ExpTheta = new double *** [NREGION];
-  double *** SumExpTheta = new double ** [NREGION];
-  double **** X = new double *** [NREGION]; // Theta = mu + Nu + LX
+   static dregspeclocallele Theta;
+   Theta = new dspeclocallele[NREGION];
+   static dregspeclocallele ExpTheta;
+   ExpTheta = new dspeclocallele[NREGION];
+   static dregspecloc SumExpTheta;
+   SumExpTheta = new dspecloc[NREGION];
+   static dregspeclocallele X;
+   X = new dspeclocallele[NREGION];
+
+  //double **** X = new double *** [NREGION]; // Theta = mu + Nu + LX
   double ** Mu = new double * [NLOCI]; 
   double *** Nu = new double ** [NSPECIES];
   
@@ -3099,7 +3205,10 @@ int main ( int argc, char** argv)
 
   // LogLik[r][k][l] holds the log-likelihood for individuals in region r, 
   // species k, at locus l 
-  double *** LogLik = new double ** [NREGION];
+  static dregspecloc LogLik;
+  LogLik = new dspecloc[NREGION];
+
+  memset( (void*)LogLik, 0, NREGION*sizeof (dspecloc) );
  
   for(int l=0; l<NLOCI; l++){
     Mu[l] = new double [MAXNALLELE];
@@ -3125,13 +3234,13 @@ int main ( int argc, char** argv)
 
   
   for(int r=0; r<NREGION; r++){
-    Count[r] = new int ** [NSPECIES];
-    Theta[r] = new double ** [NSPECIES];
-    ExpTheta[r] =  new double ** [NSPECIES];
-    X[r] = new double ** [NSPECIES];   
-    LogLik[r] = new double * [NSPECIES];
-    SumCount[r] = new int * [NSPECIES];
-    SumExpTheta[r] = new double * [NSPECIES];
+//    Count[r] = new int ** [NSPECIES];
+//    Theta[r] = new double ** [NSPECIES];
+//    ExpTheta[r] =  new double ** [NSPECIES];
+//    X[r] = new double ** [NSPECIES];   
+//    LogLik[r] = new double * [NSPECIES];
+//    SumCount[r] = new int * [NSPECIES];
+//    SumExpTheta[r] = new double * [NSPECIES];
     MeanFreq[r] = new double ** [NSPECIES];
     MeanX[r] = new double ** [NSPECIES];
     MeanX2[r] = new double ** [NSPECIES];
@@ -3140,13 +3249,13 @@ int main ( int argc, char** argv)
     MeanCor[r] = new double ** [NSPECIES];
     MeanFittedCor[r] = new double ** [NSPECIES];
     for(int k=0; k<NSPECIES; k++){
-      Count[r][k] = new int * [NLOCI];
-      Theta[r][k] = new double * [NLOCI];
-      ExpTheta[r][k] = new double * [NLOCI];
-      X[r][k] = new double * [NLOCI];
-      LogLik[r][k] = new double [NLOCI];
-      SumCount[r][k] = new int  [NLOCI];
-      SumExpTheta[r][k] = new double  [NLOCI];
+//      Count[r][k] = new int * [NLOCI];
+//      Theta[r][k] = new double * [NLOCI];
+//      ExpTheta[r][k] = new double * [NLOCI];
+//      X[r][k] = new double * [NLOCI];
+//      LogLik[r][k] = new double [NLOCI];
+//      SumCount[r][k] = new int  [NLOCI];
+//      SumExpTheta[r][k] = new double  [NLOCI];
       MeanFreq[r][k] = new double * [NLOCI];
       MeanX[r][k] = new double * [NLOCI];
       MeanX2[r][k] = new double * [NLOCI];
@@ -3167,10 +3276,10 @@ int main ( int argc, char** argv)
 	}
       }
       for(int l=0; l<NLOCI; l++){
-	Count[r][k][l] = new int [MAXNALLELE];
-	Theta[r][k][l] = new double [MAXNALLELE];
-	ExpTheta[r][k][l] = new double [MAXNALLELE];
-	X[r][k][l] = new double [MAXNALLELE];
+//	Count[r][k][l] = new int [MAXNALLELE];
+//	Theta[r][k][l] = new double [MAXNALLELE];
+//	ExpTheta[r][k][l] = new double [MAXNALLELE];
+//	X[r][k][l] = new double [MAXNALLELE];
 	MeanFreq[r][k][l] = new double [MAXNALLELE];
 	MeanX[r][k][l] = new double [MAXNALLELE];
 	MeanX2[r][k][l] = new double [MAXNALLELE];
@@ -3321,15 +3430,10 @@ int main ( int argc, char** argv)
 	
   if(LOCATE){
     for(SAMPLETOLOCATE = FIRSTSAMPLETOLOCATE; SAMPLETOLOCATE <= LASTSAMPLETOLOCATE; SAMPLETOLOCATE++){
-      char firstdigit = (char) ('0' + (SAMPLETOLOCATE+OFFSET-FIRSTSAMPLETOLOCATE) / 100);
-      char seconddigit = (char) ('0' +((SAMPLETOLOCATE+OFFSET-FIRSTSAMPLETOLOCATE) % 100) / 10);
-      char thirddigit = (char)  ('0' +((SAMPLETOLOCATE+OFFSET-FIRSTSAMPLETOLOCATE) % 10));    
       
       string LOCATEFILE(filenames["assigndir"]);
-      LOCATEFILE.push_back(firstdigit);
-      LOCATEFILE.push_back(seconddigit);
-      LOCATEFILE.push_back(thirddigit);
-      LOCATEFILE.push_back(TAG);
+	  LOCATEFILE.append("/");
+      LOCATEFILE.append( Id[SAMPLETOLOCATE] );
       LOCACCEPT = 0;
       LOCATTEMPT = 0;
 
@@ -3805,3 +3909,5 @@ int main ( int argc, char** argv)
 
  
 }
+
+
