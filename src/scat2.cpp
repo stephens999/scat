@@ -2910,14 +2910,7 @@ int main ( int argc, char** argv)
     exit(1);
   }
 
-  if( NLOCI > MAXLOCI ) {
-	  cerr << "MAXLOCI is insufficient: " << NLOCI << " needed." << endl;
-	  exit(1);
-  }
-  if( NSPECIES > MAXSPECIES ) {
-	  cerr << "MAXSPECIES is insufficient: " << NSPECIES << " needed." << endl;
-	  exit(1);
-  }
+ 
 
   cout << "MAXNALLELE = " << MAXNALLELE <<endl;
   init_genrand(SEED);
@@ -2944,7 +2937,15 @@ int main ( int argc, char** argv)
   if(argc > 8)
     NSPECIES = atoi(argv[8]);
 
- 
+  if( NLOCI > MAXLOCI ) {
+    cerr << "MAXLOCI is insufficient: " << NLOCI << " needed." << endl;
+    exit(1);
+  }
+  if( NSPECIES > MAXSPECIES ) {
+    cerr << "MAXSPECIES is insufficient: " << NSPECIES << " needed." << endl;
+    exit(1);
+  }
+  
   if(NSPECIES == 1)
     UPDATENU = 0;
 
