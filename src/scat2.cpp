@@ -662,7 +662,6 @@ double log_hybrid_Prob(CountType Count, SumCountType SumCount,vector<vector<vect
 	llocusprob += log( NULLPROB * 0.5 * (pr0 + ps0) + (1-NULLPROB) * (pr0 * ps0));
       else{
 	double mult = 1;
-	if(r==s) mult = 0.5;
 	llocusprob += log((1-NULLPROB) * mult * (pr0 * ps1 + pr1 * ps0));
       }
     }
@@ -692,7 +691,6 @@ double log_hybrid_Prob(double **** Freq,vector<vector<vector<int> > > & Genotype
 	llocusprob += log( NULLPROB * 0.5 * (pr0 + ps0) + (1-NULLPROB) * (pr0 * ps0));
       else{
 	double mult = 1;
-	if(r==s) mult = 0.5;
 	llocusprob += log((1-NULLPROB) * mult * (pr0 * ps1 + pr1 * ps0));
       }
     }
