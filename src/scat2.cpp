@@ -16,6 +16,7 @@
 #include <iomanip>
 #include <numeric>
 #include <cmath>
+#include "string.h"
 
 extern "C" void dpotrf_(
 	const char &uplo,		// (input)
