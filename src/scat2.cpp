@@ -2829,10 +2829,6 @@ int main ( int argc, char** argv)
       REMOVEREGION = 1;
       break;
 
-	case 's': // directory for output
-	  filenames["outputdir"] = argv[1]+2;
-	  break;
-	  
     case 'S': // seed
       ++argv;
       --argc;
@@ -2893,7 +2889,7 @@ int main ( int argc, char** argv)
       LASTSAMPLETOLOCATE = FIRSTSAMPLETOLOCATE;
 
   if(argc<5){
-    cerr << "Usage is ./SCAT genotypefile locationfile outputfile NLOCI Niter Nthin Nburn " << endl;
+    cerr << "Usage is ./SCAT genotypefile locationfile outputdir NLOCI Niter Nthin Nburn " << endl;
     exit(1);
   }
 
