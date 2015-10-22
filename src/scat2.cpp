@@ -2890,6 +2890,8 @@ int main ( int argc, char** argv)
 
   if(argc<5){
     cerr << "Usage is ./SCAT genotypefile locationfile outputdir NLOCI Niter Nthin Nburn " << endl;
+    cerr << "Niter, Nthin and Nburn are optional" << endl;
+    cerr << "See instructions for all additional options" << endl;
     exit(1);
   }
 
