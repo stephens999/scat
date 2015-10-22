@@ -1,8 +1,3 @@
-%
-%	Documentation for SCAT v1.0.2
-%
-%
-
 \documentclass[11pt,titlepage,times,letterpaper]{article}
 \usepackage{enumerate}
 \usepackage{epsf}                
@@ -31,7 +26,7 @@ WWW: {\tt http://github.com/stephens999/scat}\\
 \\
 }
 
-\date{September 28 2004; updated September 15 2015; see scat2.readme.txt for updates to these instructions for v2 and up}
+\date{September 28 2004; updated September 15 2015}
 
 \maketitle
 
@@ -249,8 +244,7 @@ See the example location file {\tt test.location.txt} for illustration.
 To estimate allele frequencies at all locations in the location
 file, simply run the program as in section \ref{started} above,
 using
-$$\text{{\tt ./SCAT2 <genotype filename> <location filename> <output
-filename> N L S}}$$
+$$\text{{\tt ./SCAT2 <genotype filename> <location filename> <outputdir> L}}$$
 
 \subsection{Assigning individuals}  \label{assign}
 
@@ -269,8 +263,7 @@ To perform assignments for individuals $i$ to $j$ in the input file,
 simply add {\tt -A i j} after the \SCAT command. For example, to
 perform assignments on the first, second and third individuals in the
 genotye file use
-$$\text{\tt ./SCAT2 -A 1 3 <genotype filename> <location filename> <output
-filename> N L S}$$
+$$\text{\tt ./SCAT2 -A 1 3 <genotype filename> <location filename> <outputdir> L}$$
 
 Using this {\tt -A} option causes \SCAT to perform two types of
 assignments: a smoothing assignment, and a continuous assignment.  
@@ -541,6 +534,8 @@ $\sqrt{1/\alpha_0}$ (default = 0.5).
 \item[{\tt -C extracolumns}] tells the program how many extra columns there
 are in the genotype file, between the location number and the genotype
 data. (Extra columns must be integers)
+\item[{\tt -D}] tells the program to use hard-coded boundaries for savanna african elephants
+\item[{\tt -d}] tells the program to use hard-coded boundaries for forest african elephants
 \item[{\tt -j}] update $X$ for an allele jointly, rather than one at a time.
 \item[{\tt -N}] includes a
 ``nugget'' effect in the covariance matrix.  
