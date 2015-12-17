@@ -1,4 +1,4 @@
-Repository for the SCAT code from (http://www.pnas.org/content/104/10/4228.full)[Wasser et al]
+Repository for the SCAT code from [Wasser et al](http://www.pnas.org/content/104/10/4228.full)
 
 If you download this code, please take a moment to "star" the repo (click star).
 This will let me know that someone is interested in using the code, which will allow me
