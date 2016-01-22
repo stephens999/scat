@@ -17,7 +17,6 @@ CFLAGS = -g $(INCLUDE)
 LDFLAGS = -llapack
 #LDFLAGS = -llapack /usr/lib/gcc-lib/i386-redhat-linux/3.2.3/libg2c.a /usr/lib/libm.a
 
-SUFFIXES: 
 .SUFFIXES: .cpp .o
 
 .cpp.o:
@@ -29,9 +28,6 @@ OBJ = main.gaussianprocess.o utility.o
 HDR = utility.hpp utility.cpp
 OBJ2 = scat2.o utility.o mt19937ar.o
 
-SCAT : $(OBJ)
-	$(CXX) $(CFLAGS) -o $@ $^ $(LDFLAGS)
-
 SCAT2 : $(OBJ2)
 	$(CXX) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
@@ -39,7 +35,6 @@ test: $(TESTOBJ)
 	$(CXX) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 
-main.gaussianprocess.o   : main.gaussianprocess.cpp $(HDR)
 scat2.o : scat2.cpp $(HDR)
 mt19937ar.o: mt19937ar.c
 
