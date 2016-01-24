@@ -3,18 +3,16 @@ CXX     = g++
 INCLUDE = -I. -I..
 CFLAGS = -g $(INCLUDE)
 LDFLAGS = -llapack
+OBJ2 = scat2.o utility.o mt19937ar.o
 
 .SUFFIXES: .cpp .o
 
 .cpp.o:
 	$(CXX) $(CFLAGS) -c $<
 
-OBJ2 = scat2.o utility.o mt19937ar.o
 SCAT2 : $(OBJ2)
 	$(CXX) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
-scat2.o : scat2.cpp $(HDR)
-mt19937ar.o: mt19937ar.c
 TAGS: *.hpp *.cpp
 	etags $^
 
