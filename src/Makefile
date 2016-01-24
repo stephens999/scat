@@ -20,10 +20,11 @@ tags: *.hpp *.cpp
 	ctags $^
 
 # Stripping off the symbols can make the executable smaller.
-strip: SCAT
+strip: SCAT2
 	strip $^
 
 clean:
 	rm -rf *.o *.out
+
 ultraclean: clean
-	rm -f SCAT
+	rm -f SCAT2
