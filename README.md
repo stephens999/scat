@@ -10,4 +10,14 @@ to prioritize development. If no-one stars it I'll assume no-one finds it useful
 
 - C++ code is in src/ 
 
-- compile using make
+##Compile
+```
+cd src/
+make
+```
+
+##Run on example data
+```
+ cd src/
+ ./SCAT2 ../docs/test.genotype.txt ../docs/test.location.txt . 2
+```
