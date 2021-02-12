@@ -1,3 +1,8 @@
+#ifndef UTILITY_HPP
+#define UTILITY_HPP
+
+// SCAT version 2.2.0
+
 #include <string>
 #include <map>
 #include <vector>
@@ -16,3 +21,6 @@ void rdirichlet(const vector<double> & a, const int k, vector<double> & b);
 void rperm(vector<int> & perm,int n);
 double rnorm(double,double);
 double dnorm(double);
+
+#endif
+

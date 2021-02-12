@@ -4,6 +4,8 @@
 #include <cstdlib>
 #include <cmath>
 
+// SCAT version 2.2.0
+
 using namespace std;
 
 

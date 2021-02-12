@@ -1,17 +1,20 @@
 SHELL   = sh
 CXX     = g++
-INCLUDE = -I. -I..
-CFLAGS = -g $(INCLUDE)
+#CFLAGS = -g -std=gnu++11 $(INCLUDE)
+#CFLAGS = -g -std=gnu++11 -D_GLIBCXX_DEBUG $(INCLUDE)
+#CFLAGS = -O3 -DNDEBUG $(INCLUDE)
+CFLAGS = -O3 -DNDEBUG -std=gnu++11 $(INCLUDE)
+
 LDFLAGS = -llapack
-OBJ2 = scat2.o utility.o mt19937ar.o
+OBJ2 = scat2.o utility.o mt19937ar.o readboundary.o
+
+SCAT2 : $(OBJ2)
+	$(CXX) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 .SUFFIXES: .cpp .o
 
 .cpp.o:
 	$(CXX) $(CFLAGS) -c $<
-
-SCAT2 : $(OBJ2)
-	$(CXX) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 TAGS: *.hpp *.cpp
 	etags $^
