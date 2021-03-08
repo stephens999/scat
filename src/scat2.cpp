@@ -2580,13 +2580,14 @@ int main ( int argc, char** argv)
 	  if(HYBRIDCHECK==0)
 		  LOCATE = 1;
   
-  if(LOCATE)
+  if(LOCATE) {
     if(LASTSAMPLETOLOCATE < 0)
       LASTSAMPLETOLOCATE = FIRSTSAMPLETOLOCATE;
     if(LASTSAMPLETOLOCATE < FIRSTSAMPLETOLOCATE) {
       string msg = "First and last samples to locate are incoherent";
       error_and_exit(msg);
     }
+  }
 
   if(argc<5){
     cerr << "Usage is ./SCAT genotypefile locationfile outputdir NLOCI Niter Nthin Nburn " << endl;
