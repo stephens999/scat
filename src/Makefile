@@ -8,7 +8,7 @@ CFLAGS = -O3 -DNDEBUG -std=gnu++11 $(INCLUDE)
 LDFLAGS = -llapack
 OBJ2 = scat2.o utility.o mt19937ar.o readboundary.o
 
-SCAT2 : $(OBJ2)
+SCAT2 : $(OBJ2) scat2.hpp utility.hpp readboundary.hpp
 	$(CXX) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 .SUFFIXES: .cpp .o

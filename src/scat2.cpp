@@ -1,7 +1,7 @@
 // scat2.cpp : Defines the entry point for the console application.
 //
 
-// SCAT version 2.5.0
+// SCAT version 3.0.1
 
 #include "scat2.hpp"
 #include "utility.hpp"
@@ -221,11 +221,17 @@ void InitialiseXY(vector<double> & BoundaryX, vector<double> & BoundaryY, vector
     }
     Xcenter /= (NREGION-1);
     Ycenter /= (NREGION-1);
+    int ntries = 0;
     do{
+      if (ntries == 100) {
+        cerr << "SCAT InitialiseXY(), tried 100 times and fails" << endl;
+        exit(-1);
+      }
       double lambda = ranf();
       int r = (int) (ranf() * (NREGION-1));
       Xcoord[NREGION-1] = lambda * Xcenter + (1-lambda) * Xcoord[r];
       Ycoord[NREGION-1] = lambda * Ycenter + (1-lambda) * Ycoord[r];
+      ntries++;
     } while(InRange(Xcoord[NREGION-1],Ycoord[NREGION-1],BoundaryX,BoundaryY,mymapgrid)==0);
   }
 }
@@ -471,7 +477,9 @@ void input_positions_data( ifstream & input, vector<double> & x, vector<double> 
   while(r< RegionsPresent.size()){
     input >> regionname;    
     input >> region;
-    cout << "Location " << region << ", Name " << regionname << endl;
+    if (ECHOINPUTS) {
+      cout << "Location " << region << ", Name " << regionname << endl;
+    }
     
     region = GetLocationNumber(RegionsPresent, region);
     
@@ -487,7 +495,9 @@ void input_positions_data( ifstream & input, vector<double> & x, vector<double> 
     if(region < RegionsPresent.size()){
        RegionName[Perm[region]] = regionname;
        SubRegion[Perm[region]] = subregion;
-       cout << "Region " << region << ", Name " << regionname << endl;
+       if (ECHOINPUTS) {
+         cout << "Region " << region << ", Name " << regionname << endl;
+       }
        input >> tempy;
        input >> tempx;
 
@@ -2445,6 +2455,10 @@ int main ( int argc, char** argv)
       ++argv; --argc; NULLPROB = atof(&argv[1][0]);
       break;
 
+    case 'E':
+      ++argv; --argc; ECHOINPUTS = 1;
+      break;
+
     case 'f': // fix alpha and beta, to values given in subsequent arguments
       UPDATEALPHA = 0;
       UPDATEBETA = 0;
@@ -2704,18 +2718,23 @@ int main ( int argc, char** argv)
 	   LASTSAMPLETOLOCATE = (NIND-1);
   }
   
-  output_genotypes(OriginalGenotype,Id);
+  if (ECHOINPUTS) {
+    output_genotypes(OriginalGenotype,Id);
+  }
   recode_genotypes(OriginalGenotype,Genotype,Coding,Nallele);
-  cout << "Number of Alleles at each locus:" << endl;
-  int j=1;
-  cout << "Locus : #alleles" << endl;
-  for(vector<int>::iterator i = Nallele.begin(); i!=Nallele.end(); i++)
+  if (ECHOINPUTS) {
+    cout << "Number of Alleles at each locus:" << endl;
+    int j=1;
+    cout << "Locus : #alleles" << endl;
+    for(vector<int>::iterator i = Nallele.begin(); i!=Nallele.end(); i++)
       cout << j++ << " : " << *i << endl;
-  
+  } 
   
   NREGION = RegionsPresent.size()+LOCATE;
   
-  cout << "Number of Regions: " << NREGION << endl;
+  if (ECHOINPUTS) {
+    cout << "Number of Regions: " << NREGION << endl;
+  }
   
   vector<int> Perm(NREGION,0);
 
@@ -2890,7 +2909,9 @@ int main ( int argc, char** argv)
 
   // input data from region file (Xcoords and Ycoords; regions and subregions)
   input_positions_data(regionfile,Xcoord,Ycoord,RegionName,SubRegion,Region,Perm,RegionsPresent);
-  output_positions_data(RegionName, Region, Xcoord, Ycoord, Id);
+  if (ECHOINPUTS) {
+    output_positions_data(RegionName, Region, Xcoord, Ycoord, Id);
+  }
 
   //declare memory for L, the matrix in the Cholesky decomp of Sigma
   // these are arrays for use in a C interface

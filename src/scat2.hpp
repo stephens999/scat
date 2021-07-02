@@ -1,7 +1,7 @@
 #ifndef SCAT2_HPP
 #define SCAT2_HPP
 
-// SCAT version 3.0.0
+// SCAT version 3.0.1
 
 #include <string>
 #include <iostream>
@@ -25,7 +25,7 @@ extern "C" void dpotrf_(
 
 using namespace std; 
 const double PI = 3.141592; 
-const string VERSION="3.0.0";
+const string VERSION="3.0.1";
     
 const int MAXSPECIES = 2;
 const int MAXLOCI = 10000;
@@ -43,10 +43,12 @@ typedef std::vector<IntVec3d> IntVec4d;
 
 class Mapgrid;
 
+int ECHOINPUTS = 0;
+
 const int ValidateAssumptions = 1;
 
 int USESUBREGION = 0; // indicates whether region file also holds subregion data
-int NSUBREGION = 6;
+int NSUBREGION = 8;
 
 int PSEUDOCOUNT = 0;
 int LOCATE = 0; // whether to try to estimate the position of a particular sample
