@@ -8,7 +8,7 @@
 #include <algorithm>
 #include <math.h>    // for trunc
 
-// SCAT version 2.2.0
+// SCAT version 3.0.1
 // VORONOI version 2.0.0
 
 // This file contains routines to handle grid-style species range maps
@@ -34,8 +34,41 @@ void Mapgrid::Initialize(ifstream& gridfile,int margin) {
    vector<pair<double, double> > gridvals; 
    while (getline(gridfile,line)) {
      istringstream iss(line);
+     int intest = iss.peek();
+     if (intest == EOF) {
+       cerr << "  gridfile contains an empty line" << endl;
+       exit(-1);
+     }
      iss >> latitude;
+     if (iss.fail()) {
+       cerr << "  gridfile line '" << line << "' does not start with a decimal latitude" << endl;
+       exit(-1);
+     }
+     intest = iss.peek();
+     if (intest == EOF) {
+       cerr << "  gridfile line '" << line << "' lacks second entry (a longitude)" << endl;
+       exit(-1);
+     }
+     // is it either a "E","N","S" or "W"
+     if (intest == 69 || intest == 78 || intest == 83 || intest == 87) { 
+       cerr << "  gridfile line '" << line << "' latitudes and longitudes must be decimal" << endl;
+       exit(-1);
+     }
      iss >> longitude;
+     if (iss.fail()) {
+       cerr << "  gridfile line '" << line << "' failed to parse a decimal longitude" << endl;
+       exit(-1);
+     }
+     intest = iss.peek();
+     // is it either a "E","N","S" or "W"
+     if (intest == 69 || intest == 78 || intest == 83 || intest == 87) { 
+       cerr << "  gridfile line '" << line << "' latitudes and longitudes must be decimal" << endl;
+       exit(-1);
+     }
+     if (intest != EOF) {
+       cerr << "  gridfile had more than two entries on line: '" << line << "'" << endl;
+       exit(-1);
+     }
      latitudes.push_back(latitude);
      longitudes.push_back(longitude);
      gridvals.push_back(make_pair(latitude,longitude));

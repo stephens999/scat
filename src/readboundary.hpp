@@ -5,7 +5,7 @@
 #include <iostream>
 #include <fstream>
 
-// SCAT version 3.0.0
+// SCAT version 3.0.1
 // VORONOI version 2.0.0
 
 typedef std::vector<double> DoubleVec1d;
