@@ -2,6 +2,7 @@
 #define SCAT2_HPP
 
 // SCAT version 3.0.1
+// debug comment
 
 #include <string>
 #include <iostream>
