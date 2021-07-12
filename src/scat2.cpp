@@ -2550,7 +2550,7 @@ int main ( int argc, char** argv)
       filenames["Xfile"] = argv[1]+2;
       break;
 
-    case 'w': // don't use spatial smooting
+    case 'w': // don't use spatial smoothing
       USESPATIAL = 0;
       break;
 

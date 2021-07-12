@@ -35,7 +35,7 @@ WWW: {\tt http://github.com/stephens999/scat}\\
 \\
 }
 
-\date{September 28 2004; updated September 15 2015; revised by Mary Kuhner\footnote{email:  {\tt mkkuhner@uw.edu}} December 30 2020}
+\date{September 28 2004; updated September 15 2015; revised by Mary Kuhner\footnote{email:  {\tt mkkuhner@uw.edu}} July 5 2021}
 
 
 \maketitle
@@ -202,6 +202,11 @@ be represented by {\tt -999}.}
 \end{enumerate}
 See the example genotype file, {\tt test.genotype.txt}, for an illustration.
 
+The {\tt -C} option can be used to skip extraneous columns in this
+file.  It takes an argument of the number of columns to skip;
+columns will be skipped starting with the first column after the location
+number.
+
 Some things to note:
 \begin{enumerate}
 \item There should be no commas separating columns, just white space.
@@ -235,7 +240,7 @@ LocId(S)  LocNo(S)  Latitude(S)  Longitude(S)
 \end{verbatim}
 where
 \begin{enumerate}
-\item{\tt LocId(s)} is a string, giving a label for location $s$
+\item{\tt LocId(s)} is a string, with no internal spaces or tabs, giving a label for location $s$
 ($s = 1,\dots,S$).
 \item{\tt LocNo(s)} is an integer specifying the ``Location
 number'' of sampling location $s$. These location numbers can be
@@ -248,20 +253,15 @@ example, $47^\circ 39' N$ and $122^\circ 18' W$ become 47.65 and -122.30.
 \end{enumerate}
 See the example location file {\tt test.location.txt} for an illustration.
 
-If the -Z (subregions) option is in effect, an additional column must be added to
+If the -Z (Sectors) option is in effect, an additional column must be added to
 the location file:
 
 \begin{small}
 \begin{verbatim}
-LocId(1)  LocNo(1)  SubregionNo(1)  Latitude(1)  Longitude(1)
+LocId(1)  LocNo(1)  SectorNo(1)  Latitude(1)  Longitude(1)
 \end{verbatim}
 \end{small}
 
-The {\tt -C} option can be used to skip the subregion data (or other 
-extraneous columns in the location file) if subregion analysis is not
-desired.  It takes an argument of the number of columns to skip;
-columns will be skipped starting with the first column after the location
-number.
 
 \subsection{Estimating allele frequencies}
 
@@ -272,25 +272,24 @@ $$\text{{\tt ./SCAT2 <genotype file> <location file> <outputdir> L}}$$
 
 \subsection{Assigning individuals}  \label{assign}
 
-Individuals can be assigned in one of two ways: either the {\tt -A} option or 
-{\tt -M} option (the ``assignment options").  The only difference 
-is that with {\tt -A} the individuals of unknown origin are embedded in the 
-main genotype file, and with {\tt -M} they are placed in a
-separate file.  One or the other may be more convenient for your pipeline.
+To estimate the location of individuals (``assignment") you will need
+to set either {\tt -A} or {\tt -M} (the ``assignment option").  The
+only difference between these options is that {\tt -A} takes the
+individuals to be assigned from the main genotype file, and {\tt -M}
+takes them from a separate file.  One or the other may be more
+convenient for your pipeline.  
 
-WARNING:  If you set neither assignment option, individual assignments
+Both assignment options perform two types of assignments: {\it smoothing
+ assignment,} which assigns individuals to existing locations, and 
+{\it continuous assignment,} which
+assigns them to geographical coordinates that may not coincide with any
+existing location. 
+
+WARNING:  If you set neither assignment option, smoothing assignments
 will still be produced; but no cross-validation will be done, and the certainty of
 the assignments will be inflated as a result.
 
-Both assignment options perform two types of assignments: a smoothing assignment 
-which assigns individuals to existing locations, and a continuous assignment which
-assigns them to geographical coordinates which may not coincide with any
-existing location.  Note that it is
-possible, and sometimes desirable, to assign the location of individuals
-whose location is already known (for example, to test the accuracy of the
-algorithm).  
-
-The smoothing assignment uses allele frequencies estimated at each
+Smoothing assignment uses allele frequencies estimated at each
 location in the location file to compute the probability of each
 individual's genotype in each location, and outputs the results in the
 {\tt \_probs} file (see section \ref{out}). Note that these
@@ -300,11 +299,11 @@ probabilities are computed using leave-one-out cross-validation (ie
 the genotypes of individual $i$ are ignored when estimating allele
 frequencies for assigning individual $i$).
 
-The continuous assignment uses allele frequency estimates to assign
+Continuous assignment uses allele frequency estimates to assign
 individuals, allowing an individual's location of origin to be
-anywhere in a continuous region (in particular, the location may
+anywhere in the organism's range (in particular, the location may
 be somewhere other than any of the locations in the location
-file). The range of allowable locations should be specified using a
+file). The organism's range should be specified using a
 boundary file, as described below. The software outputs a number of
 estimates for the possible location of each individual, one for each
 iteration -- both burn-in and main iterations -- of the MCMC
@@ -342,27 +341,60 @@ included in the input file, the individuals to be assigned are in a
 separate file, whose name you specify straight after the {\tt M}, with
 no space between {\tt M} and the filename:
  {\tt -Massignmentfile.txt} 
+
+The {\tt -M} option does not take arguments; it will always assign all
+individuals in the assignment file.
  
-\subsection{Specifying the habitat boundary} \label{boundary}
+\subsection{Specifying the organism's range} \label{boundary}
 
 When performing continuous assignments it is {\it highly}
-recommended that you specify the area within which individuals might
+recommended that you specify the range within which individuals might
 be found. Without this individuals may be assigned to unrealistic
-locations (eg land-dwelling organisms assigned to ocean).
+locations (eg land-dwelling organisms assigned to ocean).  If only
+smoothing assignment is needed, this is not necessary as individuals will
+only be assigned to sampling locations.
 
-Two methods of specifying the habitat boundary are provided:  as
-a polygon bounding the area, or as a grid indicating all
-1 degree squares within the area.  The latter is recommended.
+Two methods of specifying the organism's range are provided:  as
+a grid indicating all 1 degree squares within the area, or as a polygon
+bounding the area.  The former is recommended, and {\it must} be
+used if the \SCAT data are intended as input to the VORONOI program.  (The
+organism's range must be the same in \SCAT and VORONOI, and VORONOI cannot
+read the polygon boundary format.) 
 
-Note that if you intend to use the VORONOI program to post-process your SCAT2
-results, both programs {\it must} use the exact same species
-boundaries, and should therefore use the same boundary-setting option
-and the same boundary data.
+Not all organism ranges can be gracefully indicated by the current code:
+see section \ref{cautions}.  In particular, the range cannot include either pole
+or cross the line opposite the Prime Meridian.
+
+\subsubsection{Grid file:  {\tt -g} option}
+
+The organism's range can be specified by dividing the area of interest into grid
+squares of 1 degree latitude and longitude, and listing all grid squares which could
+contain the organism.  An advantage of this method is that it allows a discontinuous
+habitat, for example an island organism found on several islands but not in the ocean.
+If the organism has a very large 
+north-south range the distortion of the 1 degree grid squares may be problematic.
+
+To specify the habitat in this way, prepare a file which contains one line per
+square included in the habitat, giving decimal latitude and decimal longitude with
+a space between them.  The latitude and longitude describe the lower left corner of
+the grid square, so that an entry:
+
+{\tt -12 17}
+
+indicates the grid square whose lower left corner is 12 S and 17 E, and whose upper right 
+corner is 11 S and 18 E.
+
+The grid file is then specified to the program using the {\tt -g} option followed
+by the filename of the grid file:
+
+{\tt -g ../savannah\_grid.txt}
+
+Note that there is a space between the option and the filename.
 
 \subsubsection{Boundary file:  {\tt -B} option}
-The region can be specified as any polygon, by entering the latitude and longitude of
+The region can be specified as a polygon by entering the latitude and longitude of
 each consecutive vertex into a ``boundary'' file (see below), and using
-the {\tt -B} option to tell the software the name of this file.
+the {\tt -B} option to indicate the name of this file.
 For example, if the boundary file is called {\tt eg.boundary.txt} you
 should run \SCAT using
 $$\text{\tt ./SCAT2 -Beg.boundary.txt ...}$$ 
@@ -385,44 +417,10 @@ $2^\circ W$ to $1^\circ E$ the file could be
 5 -2
 \end{verbatim}
 
-Note: the routine that tests for whether a point is inside or outside
-the specified polygon is based on the 2-D algorithm helpfully
-described by Dan Sunday ({\tt http://www.softsurfer.com}). As such it
-does not take proper account of the fact that the earth is
-spherical. Most importantly, it will not work for regions that span
-$180^\circ E$ (the line opposite the prime meridian) unless you enter
-the Longitudes as having the same sign, eg by using $190$ and $170$
-instead of $-10$ and $170$. It also will not work for regions
-including the North or South Pole.  (Possibly it will be badly behaved
-for other regions too - let
-us know if you encounter any problems.)
-
-\subsubsection{Grid file:  {\tt -g} option}
-
-Alternatively, the habitat can be specified by dividing the area of interest into grid
-squares of 1 degree latitude and longitude, and listing all grid squares which could
-contain the organism.  An advantage of this method is that it allows a discontinuous
-habitat, for example an island organism found on several islands but not in the ocean.
-Like the polygon method, it will likely not work if the habitat crosses the line
-opposite the Prime Meridian or includes either pole, and if the organism has a very large 
-north-south range the distortion of the 1 degree grid squares may be problematic.
-
-To specify the habitat in this way, prepare a file which contains one line per
-square included in the habitat, giving decimal latitude and decimal longitude with
-a space between them.  The latitude and longitude describe the lower left corner of
-the grid square, so that an entry:
-
-{\tt -12 17}
-
-indicates the grid square whose lower left corner is 12 S and 17 E, and whose upper right 
-corner is 11 S and 18 E.
-
-The grid file is then specified to the program using the {\tt -g} option followed
-by the filename of the grid file:
-
-{\tt -g ../savannah\_grid.txt}
-
-Note that there is a space between the option and the filename.
+The routine that tests whether a point is inside or outside the polygon
+is based on the 2-D algorithm helpfully
+described by Dan Sunday ({\tt http://www.softsurfer.com}). 
+Limitations of the algorithm are described in section \ref{cautions}.
 
 \subsubsection{Pre-loaded Afrian elephant location data}
 
@@ -439,29 +437,35 @@ results.
 
 %--------------------------------------------------------------------
 
-\section{Cautions for use of the software}
+\section{Cautions for use of the software} \label{cautions}
 
 \SCAT carries out an MCMC search.  If the search is too short or mixes
 poorly, the results may be inaccurate and their certainty will be overstated.  The program
 {\tt TRACER} (see section \ref{software}) may be useful in diagnosing poor
 searches.
 
-The code which determines the species boundaries
-will not work correctly if the species range crosses the line opposite
+The code which sets the boundaries of the organism's range
+will not work correctly if the range crosses the line opposite
 the Prime Meridian or includes either pole.  Nothing is done by the code to
-diagnose such problems.  The user could, with great 
-care, rescale the latitudes and longitudes to avoid this problem (be sure 
-to reverse the rescaling before interpreting the results). 
+diagnose such problems.  
+The grid boundary approach may also be problematic if the species has a wide
+north-south distribution approaching either pole, as the size of the grid 
+squares is assumed to be roughly constant and this will not be the case.
+If such a species needs to be analyzed, we recommend rescaling the latitudes and
+longitudes to make them tractable, and then reversing the rescaling before
+interpreting the data.  
 
 If the species occurs as widely separated patches, using a grid file
 to specify correct species boundaries may cause the program to become
 stuck on the first solution it finds because other solutions are 
 ``too far away" in the patchy map.  You can diagnose this by making
 multiple runs with different random number seeds:  if each run places a
-given individual with great certainty, but different runs place this
+given individual with great certainty, but different runs place the
 individual in different patches, this problem is likely occuring.  Combining
 estimates across multiple runs will give a better estimate than any
-single run.
+single run.  Otherwise, it may be necessary to make the map more continuous
+even if this requires adding areas where the organism is not found, or to
+use smoothing rather than continuous assignment.
 
 \SCAT assumes that markers are unlinked.  Tightly linked markers will
 cause the accuracy of the results to be overstated.  Sequencing individual
@@ -476,29 +480,13 @@ discontinuity to inform each others' allele frequencies.  It may be
 helpful to separate the discontinuous areas into separate \SCAT runs,
 as was done for forest and savannah elephants in Wasser et al. (2004).
 
-Hybrids between distant populations are problematic for \SCAT both in
-the reference data and, especially, in the unknown data.  Hybrids between
-forest and savannah elephants, in pratice, yield a very wide spread of
-assignment locations and
-are sometimes pushed to the far boundaries of the species range:  they do
-not fit anywhere, so they are put as far away from everything else as possible.
-It is best to pre-identify hybrids, such as with the EBhybrids program, and
-remove them from both the reference data set and the unknowns.  This problem
-can sometimes be spotted in a heatmap of the \SCAT locations.
-
-There are hard-coded constants for the
-maximum number of loci (20) and maximum number of alleles per
-locus (120) at the top of the program.  If the user's data 
-exceeds these limits, the program will crash or malfunction.
-These limits were set for microsatellite data and are
-unlikely to work for SNP data, which
-generally has far more loci and far fewer alleles.  We do not set
-the defaults to accomodate both microsatellite and SNP data as having
-high values for both is memory intensive and unlikely to be necessary
-(except for a mixed data set with both microsatellites and SNP loci).
-To change these limits, edit the source code (they are found very
-near the top of file {\tt scat2.hpp}) and recompile ({\tt make clean}
-followed by {\tt make}).
+There is a hard-coded constant for MAXNALLELES, the maximum number
+of alleles per locus, near the top of file scat2.hpp.  It is set to 120
+by default, which is sufficient for microsatellite data and overkill for
+SNP data.  If you have loci with more alleles than this, edit the
+file and then type ``make clean" followed by ``make".  If you are using
+SNP data it may be helpful to set this constant to 5 (four bases and unknown
+data) in order to save memory.
 
 The practice of summarizing \SCAT results as median latitude and
 median longitude can be misleading if the individual's
@@ -512,11 +500,18 @@ hybrids between distant populations or species.  We recommend the use
 of {\tt EBhybrids} (see section \ref{software}) to remove putative hybrids.
 Our preliminary studies suggest that hybrids in the reference data do
 relatively little harm, but the inferred locations of hybrid individuals are
-unreliable.
+unreliable. 
 
+Occasionally the heatmap of an individual may resemble a thin rim around the
+very edge of the organism's range.  In our experience this may mean that
+the individual is a hybrid, or that it comes from a location which has been
+incorrectly excluded from the range.  In either case, the program finds that
+the individual is a poor fit for all sampling locations, so moves it as far
+away from all of them as possible, leading to the thin rim.
 
-\section{Run-length and other search parameters} \label{HowLong}
+\section{Search parameters} \label{HowLong}
 
+\subsection{Run length}
 \SCAT employs an iterative scheme to perform inference. 
 Parameters that control the number of iterations performed
 can be added to the input line, as follows:
@@ -537,6 +532,22 @@ steps through the Markov chain.
 The number of iterations required to obtain accurate answers depends
 on the complexity and size of the data set; preliminary runs are useful
 to establish a good run length.
+
+\subsection{Setting the seed ({\tt S})} \label{Soption}
+
+The {\tt -S} option can be used to set the seed of the
+pseudo-random number generator. The seed should be a
+positive integer, and must follow the {\tt -S} after a space, as in:
+$$\text{{\tt ./SCAT2 -S 3253 ...}}$$
+which will set the seed to be 3253. This option can be
+used to deliberately duplicate a previous run, or to make sure 
+that you do {\it not}
+duplicate a previous run.  If the seed is not set, a 
+random number seed based on the computer clock will be used;
+this can lead to multiple runs getting the same seed if they are started
+at almost exactly the same time, for example by a batch program.
+
+\subsection{Isolation by distance parameters ({\tt -f})}
 
 \SCAT uses a model of isolation by distance for the relationship of
 different regional populations' allele frequences:  there is expected to
@@ -586,26 +597,7 @@ discarding burnin), and then choose the row of estimates in the {\tt
 estimates. This will help ensure that the {\it combination} of
 parameter estimates used is somewhat sensible.
 
-
-\subsection{Setting the seed: {\tt -S}} \label{Soption}
-
-The {\tt -S} option can be used to set the value of the seed of the
-pseudo-random number generator. The value of the seed should be a
-positive integer, and must follow the {\tt -S} after a space, as in:
-$$\text{{\tt ./SCAT2 -S 3253 ...}}$$
-which will set the seed to be 3253. This option can be
-used to deliberately duplicate a previous run, or to make sure 
-that you do {\it not}
-duplicate a previous run.  If the seed is not set, a 
-random number seed based on the computer clock will be used;
-this can lead to multiple runs getting the same seed if they are started
-at almost exactly the same time, for example by a batch program.
-
-\subsection{Fixing model parameters (the {\tt -f} flag)}
-
-As noted above, it may be helpful to first estimate the $\alpha$ and
-$\beta$ parameters in a preliminary run, and then fix them to given
-values during assignment runs. You can fix the values of these
+You can fix the values of these
 parameters by using {\tt -f}, followed by a space, and then the values
 to use for $(\alpha_0,\alpha_1,\alpha_2,\beta)$ (four values, each
 separated by spaces).
@@ -621,7 +613,7 @@ values using the following option:
 {\tt sd} (default 0.4).  A larger {\tt sd} will correspond to a more
 wide-ranging search of alpha values.
 
-\subsection{Setting error parameters (the {\tt -e} flag)}
+\subsection{Setting error parameters ({\tt -e}}
 
 The assignment analysis machinery allows for the probabilities
 of an erroneous genotype call at one allele
@@ -629,7 +621,6 @@ of an erroneous genotype call at one allele
 $\gamma$).  The defaults are set to the values used in Wasser et al. (2004)
 of $\delta = 0.05$ and $\gamma = 0$.  These values can be changed
 using {\tt -e delta gamma}.
-
 
 \section{Options changing the mathematics or search strategy}
 
@@ -645,6 +636,7 @@ this can be changed using the options below.
 \item[{\tt -a sd}] set the proposal standard deviation for alpha updates to
 {\tt sd} (default 0.4).  A larger {\tt sd} will correspond to a more
 wide-ranging search of alpha values.
+
 \item[{\tt -h sd}] sets the
 proposal standard deviation for $X$ updates to {\tt sd} times
 $\sqrt{1/\alpha_0}$ (default = 0.5).  A larger {\tt sd} 
@@ -655,9 +647,11 @@ in preventing the sampler from becoming stuck (diagnosed by persistent
 differences between the outcome of different runs on the same data), while
 lower values may improve acceptance rate (diagnosed by examining the
 Output\_accept file).
+
 \item[{\tt -j}] update $X$ for an allele jointly, rather than one at a time.
 No information is currently available on whether this is
 helpful.
+
 \item[{\tt -N}] includes a ``nugget effect" in the covariance matrix.  
 A nugget effect is variation among samples putatively
 taken at the same point, either because of spatial structure too fine
@@ -666,6 +660,7 @@ No information is currently available on whether this is helpful, but it
 may be worth considering particularly if your sample locations are
 rather broadly defined and you think within-location population structure
 is likely.
+
 \item[{\tt -r}] use Langevin update for $X$.   This 
 update attempts to improve sampling performance by using the estimated 
 gradient of the local probability density to choose the direction in
@@ -673,23 +668,26 @@ which to move.  The Wikipedia article ``Metropolis-adjusted Langevin
 algorithm" describes this algorithm.  No information is currently
 available on whether this is helpful, but it may be worth trying if
 mixing is poor.
+
 \item[{\tt -R}] remove
 all samples from a region when doing assignment of individuals from
 that region.  This is a more aggressive form of cross-validation,
 but relies on getting enough allele frequency estimates from nearby
 regions to fill in for the disregarded frequencies for this region, and
 seems unlikely to work unless the data are quite rich and the number of
-regions is fairly large.  It might be particularly appropriate if the
+regions is fairly large.  It may be particularly appropriate if the
 data consist of a large number of regions, each with only a few
 individuals, so that region-specific empirical allele frequencies rely
 heavily on the few available samples in that region.
+
 \item[{\tt -w}] use smoothing only towards the mean, with no spatial component (ie set
 $\alpha_2 = 0$).  This asserts that the species has no spatial 
 structure, so that all regions other than the one whose frequencies are
 currently being calculated contribute equally to that calculation.  This is
 unlikely for real biological populations, though could possibly serve as
 a comparison point.
-\item[{\tt -X}] ``cheats'' by initialising location close to true location in assignment runs.  
+
+\item[{\tt -X}] ``cheat'' by initialising location close to true location in assignment runs.  
 This can be used when assigning locations to 
 individuals whose location is already known or suspected.  The search will
 converge more rapidly if it starts from a mostly-correct solution.
@@ -706,22 +704,23 @@ moving towards a poor solution.
 
 \section{Interpreting the output} \label{interpret}
 
-\subsection{Output to screen during run}
+\subsection{Verbose output: {\tt -v}}
 
-When run, the program initially outputs the data it has read from the
-input file. Since \SCAT currently performs very limited error
-checking of the input data,
-it is highly advisable to check that
-the output here is consistent with what you thought you had input.
-
+If this option is set, the program dumps its input data into the
+file specified (with a space) after {\tt -v}.   This can be useful
+in verifying that the data were read correctly.  
 As the program continues to run, it keeps you informed of progress
 (burnin iterations, main iterations etc). 
+
+If this option is not set, the program provides little feedback while
+running.
 
 \subsection{Output files} \label{out}
 
 The program produces a number of output files in the specified output directory,
 whose names are of the form {\tt Output\_xxx}. Their
 contents are as follows:
+
 \begin{enumerate}[\_params]
 \item[{\tt \_freqs}] Contains estimates (posterior means) of allele
 frequencies at each location in the location file, for each locus. It also contains,
@@ -749,7 +748,8 @@ assignment option ({\tt -A} or {\tt -M}).
 The file is still produced even if you
 don't use an assignment option, but in that case the results are not
 based on cross-validation, and assignment results will be
-over-optimistic.
+inappropriately overconfident.
+
 \item[{\tt \_params}] Contains sampled values of model parameters, and
 log-likelihood of genotype data, for each iteration of the MCMC
 (parameters are output during both burnin and main iterations, every
@@ -758,6 +758,7 @@ values of $\alpha_0, \alpha_1, \alpha_2$, $\beta$, and the
 log-likelihood for the corresponding allele frequency estimates.
 This file works well with the Tracer utility (see section \ref{software}) 
 which can display plots of the parameter values over time.  This is helpful in diagnosing poor mixing.
+
 \item[{\tt \_accept}] Contains summary of (cumulative) acceptance rates
 during MCMC runs. Each line contains data for one iteration of the
 MCMC (after thinning). Acceptance rates on each line are, in order,
@@ -783,26 +784,26 @@ expected based on their geographical distance.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{Subregions and hybrids}
+\section{Sectors and hybrids}
 
 {\bf The documentation, code comments, and code for these options do
 not agree and their correctness in the current version is not known.
 We do not recommend their use.}
 
-This functionality has been superseded by the {\tt EBhybrids}
+The use of \SCAT for hybrid detection
+has been superseded by the {\tt EBhybrids}
 program (see software list), and we strongly recommend use of that 
 program instead.  It is documented here only for completeness. 
+Assignment to sectors can be useful under some circumstances.
 
-Subregions are broad geographic areas, larger than the regions to which
-\SCAT is assigning individuals, which are considered likely to be
-more genetically differentiated than their geographic distance would
-suggest:  in African elephants these could represent the forest and
-savannah species.  
+Sectors are broad geographic areas containing multiple sampling
+locations.  They are most useful when they capture genetic differentiation
+not captured by the isolation-by-distance method.
 
 \SCAT can attempt to identify hybrids either between regions or
-between subregions.  Unless the regions are genetically
+between sectors.  Unless the regions are genetically
 distinct, hybrid identification will be very difficult; hence the
-use of subregions.  \SCAT can also attempt to assign locations to
+use of sectors.  \SCAT can also attempt to assign locations to
 identified hybrids, but this is also problematic.  One may instead
 remove identified hybrids from the analysis.
 
@@ -811,33 +812,33 @@ followed immediately (no space) by a numeric option.  There are three
 meaningful options:
 
 \begin{itemize}
-\item -H1 Hybrid analysis with subregions.  The program will estimate,
+\item -H1 Hybrid analysis with sectors.  The program will estimate,
 for each specimen, the probability that it is solely from each of the
-subregions, and the probability that it is a hybrid with ancestry from
-each pair of subregions.  (Combinations of more than 2 subregions are
+sectors, and the probability that it is a hybrid with ancestry from
+each pair of sectors.  (Combinations of more than 2 sectors are
 not considered.)
-\item -H2  Normal analysis with subregions.   This estimates the
-subregion membership of each elephant, as in the normal region-based
-assignment but using subregions instead of regions.  
+\item -H2  Normal analysis with sectors.   This estimates the
+sector membership of each elephant, as in the normal region-based
+assignment but using sectors instead of regions.  
 \item -H11 Hybrid analysis with regions.  The program will estimate 
-hybrid probabilities as in H1, but using regions instead of subregions.  
+hybrid probabilities as in H1, but using regions instead of sectors.  
 This is unlikely to work unless the regions are genetically distinct.
 \end{itemize}
 
-For {\tt -H1} and {\tt -H2} you will need to specify the subregion of
+For {\tt -H1} and {\tt -H2} you will need to specify the sector of
 each sampling location in the location file, and use the {\tt -Z} option above. 
 
-Subregion names must be 0,1,...NSUBREGIONS-1 where NSUBREGIONS is a
+Sector names must be 0,1,...NSUBREGIONS-1 where NSUBREGIONS is a
 constant in the file scat2.hpp, defaulting to 6.  The program {\it may}
-work correctly with fewer than NSUBREGIONS subregions, except that 
-rows and columns corresponding to those subregions will be meaningless; it
-is likely to crash with more than NSUBREGIONS subregions.  To adjust this
+work correctly with fewer than NSUBREGIONS sectors, except that 
+rows and columns corresponding to those sectors will be meaningless; it
+is likely to crash with more than NSUBREGIONS sectors.  To adjust this
 number, edit scat2.hpp and recompile.
 
 The results of this analysis are written to a file {\tt Output\_hybrid} in
 the output director.  This file contains one row per individual.
 
-For {\tt -H2} there is one column per subregion, and the $(i,j)$ entry
+For {\tt -H2} there is one column per sector, and the $(i,j)$ entry
 is $$\log(\Pr(\text{ind $i$'s genotype data $\mid$ $i$ comes from $j$})).$$
 In the case of the ``hybrid'' options ({\tt -H1} and {\tt -H11}) the columns are
 $$\log(\Pr(\text{ind $i$'s genotype data $\mid$ $i$ has parents from $(j_1,j_2)$})),$$
@@ -846,7 +847,7 @@ for $(j_1,j_2) = (0,0), (0,1),\dots,(0,5),(1,0),(1,1),\dots,(1,5),\dots, (5,5)$.
 The maximum entry in a row can be taken as an estimate of the individual's
 origin.  For the hybrid cases, the overall probability that an individual is
 a hybrid can be taken as the sum of all entries in the row except those indicating
-both parent from the same region or subregion.
+both parent from the same region or sector.
 
 \section{Other software useful in conjunction with \SCAT} \label{software}
 
@@ -885,7 +886,7 @@ Most of these changes were made to try to
 improve mixing for general datasets (rather than the specific one we
 analysed)."  
 
-A bug in computation of the likelihood for subregions was fixed.
+A bug in computation of the likelihood for sectors was fixed.
 
 At some point a change was introduced (probably accidentally) which caused the log probabilities
 in file {\tt Output\_probs} to be printed in hexadecimal; it is not known
