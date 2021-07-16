@@ -1,7 +1,7 @@
 // scat2.cpp : Defines the entry point for the console application.
 //
 
-// SCAT version 3.0.1
+// SCAT version 3.0.2
 
 #include "scat2.hpp"
 #include "utility.hpp"
@@ -329,7 +329,8 @@ void input_genotype_data( ifstream & input, vector<int>  & Region,
   
   string line;
   line.assign(getline(pbuf));
-  cout << "READING GENOTYPE DATA" << endl;
+  // cout << "READING GENOTYPE DATA" << endl;
+  cout << "Reading Genotype Data" << endl;
   while(line.size()>0){
 	for(int chrom = 0; chrom<2; chrom++){
   		int beg = line.find_first_not_of(delimit, 0);
@@ -2635,10 +2636,6 @@ int main ( int argc, char** argv)
   if(argc > 8)
     NSPECIES = atoi(argv[8]);
 
-  if( NLOCI > MAXLOCI ) {
-    cerr << "MAXLOCI is insufficient: " << NLOCI << " needed." << endl;
-    exit(1);
-  }
   if( NSPECIES > MAXSPECIES ) {
     cerr << "MAXSPECIES is insufficient: " << NSPECIES << " needed." << endl;
     exit(1);
@@ -2947,9 +2944,12 @@ int main ( int argc, char** argv)
   int templocate = LOCATE;
   LOCATE = 0; // don't locate during burnin
 
+  int printdot = max(Nburn * SCREENPROGRESS_INTERVAL,1.0);
+  int printincr = printdot;
 
   if(!LOCATEWHOLEREGION){
-    cerr << "Performing Burn-in iterations" << endl;
+    // cerr << "Performing Global Burn-in iterations" << endl;
+    cout << "Performing Global Burn-in iterations" << flush;
     for(int iter=0; iter< Nburn; iter++){
       for(int nthin=0; nthin < Nthin; nthin++){
 	DoAllUpdates(X,Beta,Gamma,Alpha,Mu,Nu,Theta,ExpTheta,LogLik,SumExpTheta,Count,SumCount,L,Genotype,Region,Species,Pi,Xcoord,Ycoord,Y,Eta, Delta,Lambda,  Psi,ExpPsi, SumExpPsi, M, BoundaryX, BoundaryY, mymapgrid);
@@ -2964,7 +2964,11 @@ int main ( int argc, char** argv)
       if(NSPECIES > 1)
 	OutputPi( Pi, RegionName, pifile, Perm );
        
-      cerr << "Iteration:" << (iter+1) << "\033[A" << endl;
+      // cerr << "Iteration:" << (iter+1) << "\033[A" << endl;
+      if (iter == printdot) {
+        printdot += printincr;
+        cout << "." << flush;
+      }
 
       OutputParameters(paramfile,Alpha,Beta,Gamma,Delta,Eta,Lambda,LogLik);
 
@@ -2978,6 +2982,7 @@ int main ( int argc, char** argv)
       }  
     }
   }
+  cout << "." << endl;
 
   LOCATE = templocate;
    
@@ -2997,7 +3002,14 @@ int main ( int argc, char** argv)
 
       ofstream locatefile (LOCATEFILE.c_str());
       
-      cerr << "Individual:" << (SAMPLETOLOCATE+1) << endl;      
+      // cerr << "Individual:" << (SAMPLETOLOCATE+1) << endl;      
+      string outname = Id[SAMPLETOLOCATE];
+      if (outname.length() > MAXOUTCHARS_INNAME) {
+        int diff = outname.length() - MAXOUTCHARS_INNAME;
+        outname.erase(MAXOUTCHARS_INNAME,diff);
+      }
+      // cout << "Individual: " << outname << endl;
+      cout << "Individual: " << outname << flush;
 
       // reset theta, counts, etc, ignoring individual ind
       TRUEREGION = Region[SAMPLETOLOCATE];      
@@ -3043,8 +3055,16 @@ int main ( int argc, char** argv)
       // This one is definitely needed
       calc_LogLik(LogLik,Theta,SumExpTheta,Count,SumCount);
        
+      printdot = max(Nburn * SCREENPROGRESS_INTERVAL,1.0);
+      printincr = printdot;
+      cout << "   BurnIn" << flush;
+
       for(int iter=0; iter< Nburn; iter++){
-	cout << "Burnin Iteration:" << (iter+1) << "\033[A" << endl;
+	// cout << "Burnin Iteration:" << (iter+1) << "\033[A" << endl;
+        if (iter == printdot) {
+          cout << "." << flush;
+          printdot += printincr;
+        }
 	for(int nthin=0; nthin < Nthin; nthin++){
 	  DoAllUpdates(X,Beta,Gamma,Alpha,Mu,Nu,Theta,ExpTheta,LogLik,SumExpTheta,Count,SumCount,L,Genotype,Region,Species,Pi,Xcoord,Ycoord,Y,Eta, Delta,Lambda,  Psi,ExpPsi, SumExpPsi, M, BoundaryX, BoundaryY, mymapgrid);
 	}
@@ -3057,8 +3077,18 @@ int main ( int argc, char** argv)
 
       }
       
+      // cout << endl;
+      cout << "." << "Searching" << flush;
+
+      printdot = max(Niter * SCREENPROGRESS_INTERVAL,1.0);
+      printincr = printdot;
+
       for(int iter=0; iter< Niter; iter++){
-	cout << endl << "Iteration:" << (iter+1) << "\033[A" << endl;
+	// cout << "Iteration:" << (iter+1) << "\033[A" << endl;
+        if (iter == printdot) {
+          cout << "." << flush;
+          printdot += printincr;
+        }
 	for(int nthin=0; nthin < Nthin; nthin++){
 	  DoAllUpdates(X,Beta,Gamma,Alpha,Mu,Nu,Theta,ExpTheta,LogLik,SumExpTheta,Count,SumCount,L,Genotype,Region,Species,Pi,Xcoord,Ycoord,Y,Eta, Delta,Lambda,  Psi,ExpPsi, SumExpPsi, M, BoundaryX, BoundaryY, mymapgrid);
 	}
@@ -3074,6 +3104,7 @@ int main ( int argc, char** argv)
 	
 	totaliter++;
       }	
+      cout << "." << endl;
       
       locatefile << "Acceptance rate: " << LOCACCEPT*1.0/LOCATTEMPT  << endl;
 
@@ -3092,7 +3123,7 @@ int main ( int argc, char** argv)
 	    Region[i] = TRUEREGION;
 	}
       }
-      cerr << endl;
+      // cerr << endl;
 
     }
   } else if(HYBRIDCHECK) {
@@ -3126,7 +3157,8 @@ int main ( int argc, char** argv)
     count_up_alleles(Count,Region,Species,Genotype);
 
     calc_SumCount(Count, SumCount); 
-    output_counts(Count, Perm);
+    if (VERBOSE)
+      output_counts(Count, Perm);
     hybridout.precision(4);
 
     for(int ind = 0; ind < NIND; ind++){ 
@@ -3157,7 +3189,10 @@ int main ( int argc, char** argv)
 
     XACCEPT = 0;
     XATTEMPT = 0;
-    cerr << "Performing Main Iterations " << endl;
+    // cerr << "Performing Main Iterations " << endl;
+    cout << "Performing Main Iterations" << flush;
+    printdot = max(Niter * SCREENPROGRESS_INTERVAL,1.0);
+    printincr = printdot;
 
     for(int iter=0; iter< Niter; iter++){     
       for(int nthin=0; nthin < Nthin; nthin++){
@@ -3186,7 +3221,11 @@ int main ( int argc, char** argv)
       // }
       //OutputEstimatedFreqs( ExpTheta, SumExpTheta, output, Coding, Perm);   
       //OutputTheta( MeanX, output, Coding, Perm);
-      cerr << "Iteration:" << (iter+1) << "\033[A" << endl;
+      //cerr << "Iteration:" << (iter+1) << "\033[A" << endl;
+      if (iter == printdot) {
+        cout << "." << flush;
+        printdot += printincr;
+      }
 
       OutputParameters(paramfile, Alpha, Beta, Gamma, Delta, Eta, Lambda, LogLik);
 
@@ -3200,7 +3239,8 @@ int main ( int argc, char** argv)
 	Xfile << endl;
       }
     }
-    cerr << endl;
+    // cerr << endl;
+    cout << "." << endl;
   }
 
   NormaliseMeanFreq(MeanFreq,totaliter);
@@ -3258,4 +3298,5 @@ int main ( int argc, char** argv)
     }
   }
  
+cout << "Program finished" << endl;
 }

@@ -1,7 +1,7 @@
 #ifndef SCAT2_HPP
 #define SCAT2_HPP
 
-// SCAT version 3.0.1
+// SCAT version 3.0.2
 // debug comment
 
 #include <string>
@@ -26,10 +26,9 @@ extern "C" void dpotrf_(
 
 using namespace std; 
 const double PI = 3.141592; 
-const string VERSION="3.0.1";
+const string VERSION="3.0.2";
     
 const int MAXSPECIES = 2;
-const int MAXLOCI = 10000;
 const int MAXNALLELE = 120; 
 const int MARGIN = 7;  // margin around grid
 
@@ -111,6 +110,9 @@ int NSPECIES = 1;
 
 int NLOCI = 16;
 const double EPSILON = 1e-100;
+
+string::size_type MAXOUTCHARS_INNAME = 20;
+double SCREENPROGRESS_INTERVAL = 0.2;  // percentage of progress for a "." on screen
 
 double NBETA = 0.001; // parameters on gamma prior on beta 
 double LBETA = 0.001; // (beta is prior precision of mu)
