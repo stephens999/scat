@@ -82,11 +82,7 @@ int REMOVEREGION = 0;
 
 int USELANGEVIN = 0;
 int USESPATIAL =1; 
-int CROSSVAL = 0;
 int HYBRIDCHECK = 0;
-
-int STARTCROSSVAL = 0; // ind to start CV at
-int ENDCROSSVAL = 0; // ind to end CV at
 
 int UPDATEALPHA =1;
 int INITALPHA = 0;

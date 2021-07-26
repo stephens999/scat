@@ -2434,11 +2434,6 @@ int main ( int argc, char** argv)
       READBOUNDARY = 1; 
       break;
 
-    case 'c': // cross-validate
-      CROSSVAL = 1;
-      STARTCROSSVAL = atoi(&argv[1][2]);
-      break;
-      
     case 'C':
       ++argv; --argc;  SKIPCOL =  atoi(&argv[1][0]);
       break;
@@ -2457,7 +2452,7 @@ int main ( int argc, char** argv)
       break;
 
     case 'E':
-      ++argv; --argc; ECHOINPUTS = 1;
+      ECHOINPUTS = 1;
       break;
 
     case 'f': // fix alpha and beta, to values given in subsequent arguments
