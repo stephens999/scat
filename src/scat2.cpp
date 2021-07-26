@@ -243,7 +243,8 @@ void ReadInBoundary(ifstream & bfile, vector<double> & BoundaryX, vector<double>
    do{
       bfile >> y;
       bfile >> x;
-      cerr << y << "," << x << endl;
+      if (ECHOINPUTS)
+        cout << y << "," << x << endl;
       x = PI*x/180;
       y = PI*y/180;
       BoundaryX.push_back(x);
@@ -2754,7 +2755,7 @@ int main ( int argc, char** argv)
   DoubleVec1d BoundaryX;
   DoubleVec1d BoundaryY;
   if(READBOUNDARY){
-    cerr << "Reading in Boundary data from boundary file " << filenames["boundaryfile"] << endl;
+    cout << "Reading in Boundary data from boundary file " << filenames["boundaryfile"] << endl;
     ifstream bfile (filenames["boundaryfile"].c_str());
     if (!bfile.is_open()) {
       error_and_exit("Could not open boundary file");
@@ -2765,7 +2766,7 @@ int main ( int argc, char** argv)
   
   Mapgrid mymapgrid;
   if(READGRID){
-    cerr << "Reading in gridfile data from file " << filenames["gridfile"] << endl;
+    cout << "Reading in gridfile data from file " << filenames["gridfile"] << endl;
     ifstream gridfile (filenames["gridfile"].c_str());
     if (!gridfile.is_open()) {
       error_and_exit("Could not open grid file" + filenames["gridfile"]);
