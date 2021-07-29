@@ -6,9 +6,9 @@ CXX     = g++
 CFLAGS = -O3 -DNDEBUG -std=gnu++11 $(INCLUDE)
 
 LDFLAGS = -llapack
-OBJ2 = scat2.o utility.o mt19937ar.o readboundary.o
+OBJ2 = scat3.o utility.o mt19937ar.o readboundary.o
 
-SCAT2 : $(OBJ2) scat2.hpp utility.hpp readboundary.hpp
+SCAT3 : $(OBJ2) scat3.hpp utility.hpp readboundary.hpp
 	$(CXX) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 .SUFFIXES: .cpp .o
@@ -23,11 +23,11 @@ tags: *.hpp *.cpp
 	ctags $^
 
 # Stripping off the symbols can make the executable smaller.
-strip: SCAT2
+strip: SCAT3
 	strip $^
 
 clean:
 	rm -rf *.o *.out
 
 ultraclean: clean
-	rm -f SCAT2
+	rm -f SCAT3

@@ -16,7 +16,7 @@
 \definecolor{darkblue}{rgb}{0.109,0.35,0.538}
 
 
-\def\SCAT{{\tt SCAT2} }
+\def\SCAT{{\tt SCAT3} }
 \def\Di{{\cal D}}
 
 \def \Pr{{\rm Pr}}
@@ -27,7 +27,7 @@
 \pagenumbering{arabic}
 \begin{document}
 
-\title{Documentation for {\tt SCAT}, version 3.0}
+\title{Documentation for {\tt SCAT}, version 3.0.2}
 
 \author{
 Software code and documentation by Matthew Stephens\footnote{email: {\tt mstephens@uchicago.edu}} \\
@@ -35,7 +35,7 @@ WWW: {\tt http://github.com/stephens999/scat}\\
 \\
 }
 
-\date{September 28 2004; updated September 15 2015; revised by Mary Kuhner\footnote{email:  {\tt mkkuhner@uw.edu}} July 28 2021}
+\date{September 28 2004; updated September 15 2015; revised by Mary Kuhner\footnote{email:  {\tt mkkuhner@uw.edu}} July 29 2021}
 
 
 \maketitle
@@ -68,11 +68,18 @@ will be made available via
 $$\text{{\tt http://github.com/stephens999/scat}}$$
 Please send bug reports and requests for new features by opening an issue on that page.
 
+\subsection{How to cite this program}
+
 In publications including results from the use of this program, please
-{\it specify the version of the software you used}, and cite
-Wasser et al. (2004).
+{\it specify the version of the software you used}, and cite Wasser
+et al. (2004):
 
+Wasser SK, Shedlock AM, Comstock K, Ostrander EA, Mutayoba B, Stephens M (2004)
+Assigning African elephant DNA to geographic region of origin:  applications
+to the ivory trade.  PNAS 101: 14847-14852.
 
+We would love to hear about any such publications
+(email mkkuhner@uw.edu).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -86,17 +93,16 @@ will need to compile from source.
 
 The Linux executable comes in a gzipped tar file.
 Extract the files from the {\tt .tar.gz} file by typing
-$$\text{{\tt gunzip scat.linux.xx.tar.gz}}$$
-$$\text{{\tt tar -xvf scat.linux.xx.tar}}$$
-at the command line, where {\tt xx} is the version number.
+$$\text{{\tt gunzip scat.linux.X.tar.gz}}$$
+$$\text{{\tt tar -xvf scat.linux.X.tar}}$$
+at the command line, where {\tt X} is the version number.
 This will create a new directory called something like
 {\tt scat.linux.xx}. Change to this directory before
 running the program.
 
 Source code is available on the github page. 
-To build the program from source, unpack the source code into a directory and type:
-
-{\tt make}
+To build the program from source, unpack the source code into a directory 
+and change directory into scat-master/src/.  Then type {\tt make}.
 
 The Makefile as distributed makes an optimized version of the program for speed.
 If you need to run the program in a debugger such as {\tt gdb}, turn off optimization 
@@ -145,7 +151,7 @@ are given below. Finally, you must create a directory or folder to hold your res
 
 Once these files are created you can run the program
 using
-$$\text{{\tt ./SCAT2 <genotype file> <location file> <outputdir> L}}$$ 
+$$\text{{\tt ./SCAT3 <genotype file> <location file> <outputdir> L}}$$ 
 where {\tt L} is the number of loci in the genotype file and <outputdir>
 is the path to your output directory.
 
@@ -156,7 +162,7 @@ the \SCAT executable and the two input files in the current directory and typing
 
 {\flushleft
 \tt{mkdir results}  \\
-{\tt ./SCAT2\_1 test.genotype.txt test.location.txt results 2} \\
+{\tt ./SCAT3 test.genotype.txt test.location.txt results 2} \\
 }
 
 \medskip
@@ -170,9 +176,8 @@ Section \ref{interpret} describes the output files in more detail.
 To analyse your own data, you must prepare a genotype file and
 location file in the appropriate format, as described below, and then
 run the program as above (replacing 2 with the 
-the number of loci in your genotype file). A number of additional options, which
-can be used to control certain aspects of how the program runs, are
-described in subsequent sections and the appendix.
+the number of loci in your genotype file). A number of additional options
+to modify program behavior are described in subsequent sections.
 
 \subsection{Genotype file format} \label{inputfile}
 
@@ -204,9 +209,11 @@ the sampling location
 of individual $i$ (the location number for each location 
 is specified in the location file; see below). Individuals of unknown
 origin should be given a location number of -1.
-\item{{\tt Allele(il1),Allele(il2)}} are the two alleles in
+\item{{\tt Allele(il1),Allele(il2)}} are integers representing the two alleles in
 individual $i$ at locus $l$. {\bf Missing alleles should
-be represented by {\tt -999}.}
+be represented by {\tt -999}.}  (Programmatically, any negative number
+will treated as missing data, but we strongly recommend use of -999 for
+consistency with other programs that use this format.)
 \end{enumerate}
 See the example genotype file, {\tt test.genotype.txt}, for an illustration.
 
@@ -225,8 +232,6 @@ and it need not be the same two numbers in each column (so recoding SNP data
 using A=1, C=2, G=3 and T=4 is fine).  For microsatellites you can use 
 allele length, or number of repeats, or indeed any set of integers.  No use 
 is made of the relative values of these numbers; they are arbitrary labels.
-However, negative numbers other than {\tt -999} (which will be interpreted as
-missing data) should not be used.
 \item The software assumes independence of loci (no linkage disequilibrium),
 so it is advisable to avoid markers that are very closely linked. 
 Use of closely linked markers will overstate the amount of independent 
@@ -284,12 +289,12 @@ the run goes on.
 To estimate allele frequencies at all locations in the location
 file, simply run the program as in section \ref{started} above,
 using
-$$\text{{\tt ./SCAT2 <genotype file> <location file> <outputdir> L}}$$
+$$\text{{\tt ./SCAT3 <genotype file> <location file> <outputdir> L}}$$
 
-\subsection{Assigning individuals}  \label{assign}
+\subsection{Assigning individuals ({\tt -A, -M})}  \label{assign}
 
 To estimate the location of individuals (``assignment") you will need
-to set either {\tt -A} or {\tt -M} (the ``assignment option").  The
+to set either {\tt -A} or {\tt -M} (the ``assignment options").  The
 only difference between these options is that {\tt -A} takes the
 individuals to be assigned from the main genotype file, and {\tt -M}
 takes them from a separate file.  One or the other may be more
@@ -333,7 +338,7 @@ in a file whose name is the same as the individual ID. (The third column in
 this file gives the log likelihood of each estimate, which can be
 used to investigate mixing.)
 
-\subsubsection{-A option}
+\subsubsection{Assignment from main genotype file ({\tt -A})}
 
 The {\tt -A} option is used when
 individuals to be assigned are included in the genotype file, on
@@ -348,9 +353,9 @@ simply add {\tt -A i j} after the \SCAT command. For example, to
 perform assignments on the first, second and third individuals in the
 genotye file use
 
-{\tt ./SCAT2\_1 -A 1 3 <genotype file> <location file> <outputdir> L}
+{\tt ./SCAT3 -A 1 3 <genotype file> <location file> <outputdir> L}
 
-\subsubsection{{\tt -M} option} \label{assign2}
+\subsubsection{Assignment from separate file ({\tt -M})} \label{assign2}
 
 This option behaves exactly like {\tt -A}, except that rather than being
 included in the input file, the individuals to be assigned are in a
@@ -359,7 +364,8 @@ no space between {\tt M} and the filename:
  {\tt -Massignmentfile.txt} 
 
 The {\tt -M} option does not take arguments; it will always assign all
-individuals in the assignment file.
+individuals in the assignment file.  The format of the assignment
+file is identical to that of the genotypes file.
  
 \subsection{Specifying the organism's range} \label{boundary}
 
@@ -381,7 +387,7 @@ Not all organism ranges can be gracefully indicated by the current code:
 see section \ref{cautions}.  In particular, the range cannot include either pole
 or cross the line opposite the Prime Meridian.
 
-\subsubsection{Grid file:  {\tt -g} option}
+\subsubsection{Grid file  ({\tt -g})}
 
 The organism's range can be specified by dividing the area of interest into grid
 squares of 1 degree latitude and longitude, and listing all grid squares which could
@@ -410,16 +416,16 @@ Note that there is a space between the option and the filename.
 The program's search area for continuous assignment will be formed by determining
 the minimum square capable of containing all of the specified 
 grid squares and add a 7 square margin around the edges to avoid edge effects.
-(This margin size is specified as MARGIN in file scat2.hpp, if you need
+(This margin size is specified as MARGIN in file scat3.hpp, if you need
 to change it.)
 
-\subsubsection{Boundary file:  {\tt -B} option}
+\subsubsection{Boundary file  ({\tt -B})}
 The region can be specified as a polygon by entering the latitude and longitude of
 each consecutive vertex into a ``boundary'' file (see below), and using
 the {\tt -B} option to indicate the name of this file.
 For example, if the boundary file is called {\tt eg.boundary.txt} you
 should run \SCAT using
-$$\text{\tt ./SCAT2 -Beg.boundary.txt ...}$$ 
+$$\text{\tt ./SCAT3 -Beg.boundary.txt ...}$$ 
 
 Note that there is no space between the B and the file name.
 The boundary file should contain one row for each vertex in the
@@ -535,7 +541,7 @@ for that iteration.  The medians of the non-burn-in latitudes and longitudes
 can be considered point estimates of the sample's origin, or the
 entire distribution can be considered as an area estimate.
 
-\subsection{Verbose output: {\tt -v}}
+\subsection{Verbose output ({\tt -v})}
 
 This option causes the program to write an additional output file
 containing the contents of various internal arrays including the
@@ -552,7 +558,7 @@ useful only to someone trying to modify or debug the code.
 \SCAT employs an iterative scheme to perform inference. 
 Parameters that control the number of iterations performed
 can be added to the input line, as follows:
-$$\text{{\small \tt ./SCAT2 <genotype file> <location file> <output
+$$\text{{\small \tt ./SCAT3 <genotype file> <location file> <output
 filename> L Niter Nthin Nburn }}$$ where {\tt Niter} is the number
 of sampled iterations of the MCMC scheme to be performed, {\tt Nthin} is the
 number of steps taken through the Markov chain between samplings (the ``thinning interval") and {\tt
@@ -561,7 +567,7 @@ Nburn} is the number of burn-in iterations.
 For example, to set
 $$\text{{\tt Niter=100}}, \text{{\tt Nthin=10}}, \text{{\tt Nburn=100}}$$
 use
-$$\text{{\tt \small./SCAT2 <genotype file> <location file> <output
+$$\text{{\tt \small./SCAT3 <genotype file> <location file> <output
 filename> L 100 10 100 }}$$ 
 In fact, the above values are the
 default values. Each iteration performs {\tt Nthin}
@@ -576,12 +582,12 @@ run longer or shorter will require modifiying {\tt Nthin} so that the same
 number of sampled iterations represented a larger or smaller total number
 of iterations.
 
-\subsection{Setting the seed ({\tt S})} \label{Soption}
+\subsection{Setting the seed ({\tt -S})} \label{Soption}
 
 The {\tt -S} option can be used to set the seed of the
 pseudo-random number generator. The seed should be a
 positive integer, and must follow the {\tt -S} after a space, as in:
-$$\text{{\tt ./SCAT2 -S 3253 ...}}$$
+$$\text{{\tt ./SCAT3 -S 3253 ...}}$$
 which will set the seed to be 3253. This option can be
 used to deliberately duplicate a previous run, or to make sure 
 that you do {\it not}
@@ -624,7 +630,7 @@ $(\alpha_0,\alpha_1,\alpha_2,\beta)$ separated by spaces.
 If good values are known, this might speed up the process of finding better
 ones.  
 
-\subsubsection{Estimating and then fixing the parameters}
+\subsubsection{Estimating and then fixing the parameters ({\tt -f, -b})}
 
 In Wasser et al. (2004)
 the program was run with a large number of iterations ({Niter=100, Nthin=1000,
@@ -665,7 +671,7 @@ estimated Effective Sample Size is low, increase {\tt Niter}.
 The program also contains a menu option {\tt -b} to fix $\beta$ only,
 while allowing the $\alpha$ parameters to be estimated.  If this is
 used alone it will fix $\beta$ to its default of 1.0, as found in
-scat2.hpp.  The {\tt -i} option can be used to provide a different
+scat3.hpp.  The {\tt -i} option can be used to provide a different
 value. 
 
 \subsubsection{Co-estimating assignment and parameters}
@@ -764,7 +770,7 @@ helpful to separate the discontinuous areas into separate \SCAT runs,
 as was done for forest and savannah elephants in Wasser et al. (2004).
 
 There is a hard-coded constant for MAXNALLELE, the maximum number
-of alleles per locus, near the top of file scat2.hpp.  It is set to 120
+of alleles per locus, near the top of file scat3.hpp.  It is set to 120
 by default, which is sufficient for microsatellite data and overkill for
 SNP data.  If you have loci with more alleles than this, edit the
 file and then type ``make clean" followed by ``make".  If you are using
@@ -912,9 +918,9 @@ moving towards a poor solution.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{Sectors and hybrids}
+\section{Sectors and hybrids ({\tt -H})}
 
-The use of \SCAT for hybrid detection
+The use of \SCAT for hybrid inference
 has been superseded by the {\tt EBhybrids}
 program (see software list), and we strongly recommend use of that 
 program instead.  It is documented here only for completeness. 
@@ -954,11 +960,11 @@ For {\tt -H1} and {\tt -H2} you will need to specify the sector of
 each sampling location in the location file, and use the {\tt -Z} option above. 
 
 Sector names must be 0,1,...NSUBREGIONS-1 where NSUBREGIONS is a
-constant in the file scat2.hpp, defaulting to 6.  The program {\it may}
+constant in the file scat3.hpp, defaulting to 6.  The program {\it may}
 work correctly with fewer than NSUBREGIONS sectors, except that 
 rows and columns corresponding to those sectors will be meaningless; it
 is likely to crash with more than NSUBREGIONS sectors.  To adjust this
-number, edit scat2.hpp and recompile.
+number, edit scat3.hpp and recompile.
 
 The results of this analysis are written to a file {\tt Output\_hybrid} in
 the output director.  This file contains one row per individual.
@@ -1010,16 +1016,17 @@ changed (back?) to decimal; this may disrupt scripts written for the previous
 version. 
 
 \subsubsection{Improvements}
-Version number was added.  The Makefile was revised so that "make" makes 
-the \SCAT executable.  Function templates were moved to a file {\tt scat2.hpp}.
-The documentation was extensively rewritten.
+Specification of species boundaries via the grid file was added.  This
+functionality is in an additional source file {\tt readboundary.cpp}
+with function templates in {\tt readboundary.hpp}:  the code is shared
+with VORONOI so that they will behave exactly the same in this regard.
 
 The hard-coded limits on number of regions and number of loci were removed; 
 the program can now handle any reasonable number of regions and loci and does not need
 recompilation to do so.  Unfortunately, there is still a hard-coded limit
 on number of alleles per locus, set to 120 in the distribution version; if you
 have any loci with more than 120 alleles you will need to modify this and
-recompile.  (If you have much fewer alleles per locus, and suspect you are
+recompile.  (If you have fewer alleles per locus, and suspect you are
 running out of space, setting this lower may help.)
 
 Printing of input data to screen at the start of a run is now turned off
@@ -1035,6 +1042,10 @@ number of loci must be the same for all haplotypes of all individuals.
 Runtime options which take numbers as input now check if they are legal;
 options which read from files check if the file exists.
 
+Version number was added.  The Makefile was revised so that "make" makes 
+the \SCAT executable.  Function templates were moved to a file {\tt scat3.hpp}.
+The documentation was extensively rewritten.
+
 Internal variable handling was extensively revised to improve maintainability
 (mainly changes from C arrays to C++ std::vector).
 This should not impact correctness but may cause the MCMC search to take a
@@ -1047,18 +1058,9 @@ on a specific data set and was not suitable for distribution.
 Options which set parameters no longer used in the code were
 also removed:  {\tt -c, -F, -T}.  An option {\tt -E} which claimed
 to allow resetting of the upper limits on loci and alleles (but
-actually did nothing) was been removed and its letter repurposed.
+actually did nothing) was removed and its letter repurposed.
 
 %------------------------------------------------------------------------------
-
-\section{How to cite this program}
-
-In publications including results from the use of this program, please
-{\it specify the version of the software you used}, and cite:
-
-Wasser SK, Shedlock AM, Comstock K, Ostrander EA, Mutayoba B, Stephens M (2004)
-Assigning African elephant DNA to geographic region of origin:  applications
-to the ivory trade.  PNAS 101: 14847-14852.
 
 
 \section{Acknowledgements}
