@@ -470,6 +470,20 @@ void output_positions_data(const vector<string> & RegionName, const vector<int> 
 
 void input_positions_data( ifstream & input, vector<double> & x, vector<double> & y, vector<string> & RegionName, vector<int> & SubRegion, vector<int> & Region, vector<int> & Perm, vector<int> & RegionsPresent)
 {
+  // What this code does:  It takes RegionsPresent, which is a list of the regions referred to by
+  // the genotypes file data, and treats it as establishing a canonical order of the regions which
+  // will be relevant to this run.  It then reads the locations file, which may contain far more
+  // locations than that.  It only processes those which are in RegionsPresent, and it identifies
+  // them for downstream use by their index in RegionsPresent, NOT by the number associated with 
+  // them in the regionfile.
+
+  // The code also relies on the fact that if a region is not found in RegionsPresent (because no
+  // samples for it were found in the genootypes file), function GetLocationNumber returns 
+  // RegionsPresent.size(), which is treated as a "not found" special value.
+
+  // We suppressed printing from this routine as what was printed was extremely confusing!
+  // Mary Kuhner 2021/07/26.
+
   int region,s;
   string regionname;
   int subregion=0;
@@ -479,9 +493,6 @@ void input_positions_data( ifstream & input, vector<double> & x, vector<double> 
   while(r< RegionsPresent.size()){
     input >> regionname;    
     input >> region;
-    if (ECHOINPUTS) {
-      cout << "Location " << region << ", Name " << regionname << endl;
-    }
     
     region = GetLocationNumber(RegionsPresent, region);
     
@@ -497,9 +508,6 @@ void input_positions_data( ifstream & input, vector<double> & x, vector<double> 
     if(region < RegionsPresent.size()){
        RegionName[Perm[region]] = regionname;
        SubRegion[Perm[region]] = subregion;
-       if (ECHOINPUTS) {
-         cout << "Region " << region << ", Name " << regionname << endl;
-       }
        input >> tempy;
        input >> tempx;
 
@@ -2465,10 +2473,6 @@ int main ( int argc, char** argv)
       ++argv;--argc; BETA = atof(&argv[1][0]);
       break;
 
-    case 'F':
-      OUTPUTSAMPLEFREQ = 1;
-      break;
-    
     case 'g': // read in grid file, replacement for a boundary file
       ++argv; --argc;
       filenames["gridfile"] = argv[1];

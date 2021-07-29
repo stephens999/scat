@@ -134,7 +134,7 @@ instructions on using the program for assignment.
 To run the program, you must supply two input files: a genotype file,
 containing the genotype information, and a location file, containing
 information on the latitude and longitude of sampling locations. To
-perform continuous assignment tests you must also supply a file giving the
+perform continuous assignment you must also supply a file giving the
 boundaries of the habitat of the individuals being assigned - see
 section \ref{boundary}.  Instructions for how to prepare these files
 are given below. Finally, you must create a directory or folder to hold your results.
@@ -173,7 +173,11 @@ described in subsequent sections and the appendix.
 \subsection{Genotype file format} \label{inputfile}
 
 The genotype file is supplied by the user to specify genotypes of the
-individuals to be analysed. The file should be a plain text (.txt) file.
+individuals to be analysed.   Note that \SCAT assumes diploid, unphased
+data (phased data will work but no use is made of the phase information);
+there must be exactly two input lines per individual sampled.
+
+The file should be a plain text (.txt) file.
 Its format is similar to that
 used by the program {\tt STRUCTURE} (see section \ref{software})
 and can be represented as follows:
@@ -223,6 +227,8 @@ missing data) should not be used.
 so it is advisable to avoid markers that are very closely linked. 
 Use of closely linked markers will overstate the amount of independent 
 information available and lead to too-tight estimates of confidence.
+While you can input phased data to \SCAT, the fact that you were able to phase
+it is a strong warning that it may be too tightly linked to work well.
 \end{enumerate}
 
 \subsection{Location file format}
@@ -262,6 +268,12 @@ LocId(1)  LocNo(1)  SectorNo(1)  Latitude(1)  Longitude(1)
 \end{verbatim}
 \end{small}
 
+\subsection{Echo input data to screen ({\tt -E})}
+The {\tt -E} option will echo the input genotypes file, location file, and 
+related information
+to screen at the start of the run.  This is useful in verifying that the data
+are read in correctly.  It also prints more verbose progress reports as
+the run goes on.
 
 \subsection{Estimating allele frequencies}
 
@@ -295,8 +307,8 @@ individual's genotype in each location, and outputs the results in the
 {\tt \_probs} file (see section \ref{out}). Note that these
 probabilities are also computed even if no assignment option is
 used; the difference is that when an assignment option is invoked these
-probabilities are computed using leave-one-out cross-validation (ie
-the genotypes of individual $i$ are ignored when estimating allele
+probabilities are computed using leave-one-out cross-validation 
+(that is, the genotypes of individual $i$ are ignored when estimating allele
 frequencies for assigning individual $i$).
 
 Continuous assignment uses allele frequency estimates to assign
@@ -314,7 +326,7 @@ longitude of the remaining samples can be used as a point estimate for
 the individual's location, and the spread of the points gives an
 indication of the uncertainty. The results for each individual are saved 
 in a file whose name is the same as the individual ID. (The third column in
-this file gives a measure of the log likelihood, which can be
+this file gives the log likelihood of each estimate, which can be
 used to investigate mixing.)
 
 \subsubsection{-A option}
@@ -410,11 +422,11 @@ exact} repeat of the coordinates of the first vertex.
 For example, to specify a square region, from $5^\circ N$ to $3^\circ S$ and
 $2^\circ W$ to $1^\circ E$ the file could be
 \begin{verbatim}
-5 -2
-5  1
--3 1
--3 -2
-5 -2
+5.0 -2.0
+5.0  1.0
+-3.0 1.0
+-3.0 -2.0
+5.0 -2.0
 \end{verbatim}
 
 The routine that tests whether a point is inside or outside the polygon
@@ -425,7 +437,7 @@ Limitations of the algorithm are described in section \ref{cautions}.
 \subsubsection{Pre-loaded Afrian elephant location data}
 
 The program contains pre-loaded boundaries for savannah and forest 
-African elephants.  These boundaries are very loose (in particular
+African elephants.  These boundaries are not accurate (in particular
 the savannah boundary contains a good deal of ocean) and we do not
 recommend their use for any purpose other than replicating previous
 results.
@@ -435,285 +447,9 @@ results.
 \item[{\tt -D}] use hard-coded boundaries for forest African elephants
 \end{itemize}
 
-%--------------------------------------------------------------------
-
-\section{Cautions for use of the software} \label{cautions}
-
-\SCAT carries out an MCMC search.  If the search is too short or mixes
-poorly, the results may be inaccurate and their certainty will be overstated.  The program
-{\tt TRACER} (see section \ref{software}) may be useful in diagnosing poor
-searches.
-
-The code which sets the boundaries of the organism's range
-will not work correctly if the range crosses the line opposite
-the Prime Meridian or includes either pole.  Nothing is done by the code to
-diagnose such problems.  
-The grid boundary approach may also be problematic if the species has a wide
-north-south distribution approaching either pole, as the size of the grid 
-squares is assumed to be roughly constant and this will not be the case.
-If such a species needs to be analyzed, we recommend rescaling the latitudes and
-longitudes to make them tractable, and then reversing the rescaling before
-interpreting the data.  
-
-If the species occurs as widely separated patches, using a grid file
-to specify correct species boundaries may cause the program to become
-stuck on the first solution it finds because other solutions are 
-``too far away" in the patchy map.  You can diagnose this by making
-multiple runs with different random number seeds:  if each run places a
-given individual with great certainty, but different runs place the
-individual in different patches, this problem is likely occuring.  Combining
-estimates across multiple runs will give a better estimate than any
-single run.  Otherwise, it may be necessary to make the map more continuous
-even if this requires adding areas where the organism is not found, or to
-use smoothing rather than continuous assignment.
-
-\SCAT assumes that markers are unlinked.  Tightly linked markers will
-cause the accuracy of the results to be overstated.  Sequencing individual
-genes and then using all variable sites within them as markers is likely
-to cause this problem and cannot be recommended as a way to obtain \SCAT
-input data.
-
-\SCAT assumes that allele frequencies change smoothly with geographic
-distance.  If there are strong discontinuities in gene flow, it will
-inappropriately use populations which are nearby but separated by the
-discontinuity to inform each others' allele frequencies.  It may be
-helpful to separate the discontinuous areas into separate \SCAT runs,
-as was done for forest and savannah elephants in Wasser et al. (2004).
-
-There is a hard-coded constant for MAXNALLELES, the maximum number
-of alleles per locus, near the top of file scat2.hpp.  It is set to 120
-by default, which is sufficient for microsatellite data and overkill for
-SNP data.  If you have loci with more alleles than this, edit the
-file and then type ``make clean" followed by ``make".  If you are using
-SNP data it may be helpful to set this constant to 5 (four bases and unknown
-data) in order to save memory.
-
-The practice of summarizing \SCAT results as median latitude and
-median longitude can be misleading if the individual's
-inferred distribution is patchy or irregular in shape.  Displaying
-a heatmap of all \SCAT results for that individual may be preferable,
-and/or reporting the bounding region containing a given percentage
-of the estimates.
-
-In our hands, \SCAT does a poor job localizing individuals which are
-hybrids between distant populations or species.  We recommend the use
-of {\tt EBhybrids} (see section \ref{software}) to remove putative hybrids.
-Our preliminary studies suggest that hybrids in the reference data do
-relatively little harm, but the inferred locations of hybrid individuals are
-unreliable. 
-
-Occasionally the heatmap of an individual may resemble a thin rim around the
-very edge of the organism's range.  In our experience this may mean that
-the individual is a hybrid, or that it comes from a location which has been
-incorrectly excluded from the range.  In either case, the program finds that
-the individual is a poor fit for all sampling locations, so moves it as far
-away from all of them as possible, leading to the thin rim.
-
-\section{Search parameters} \label{HowLong}
-
-\subsection{Run length}
-\SCAT employs an iterative scheme to perform inference. 
-Parameters that control the number of iterations performed
-can be added to the input line, as follows:
-$$\text{{\small \tt ./SCAT2 <genotype file> <location file> <output
-filename> L Niter Nthin Nburn }}$$ where {\tt Niter} is the number
-of sampled iterations of the MCMC scheme to be performed, {\tt Nthin} is the
-number of steps taken through the Markov chain between samplings (the ``thinning interval") and {\tt
-Nburn} is the number of burn-in iterations.
-
-For example, to set
-$$\text{{\tt Niter=100}}, \text{{\tt Nthin=10}}, \text{{\tt Nburn=100}}$$
-use
-$$\text{{\tt \small./SCAT2 <genotype file> <location file> <output
-filename> L 100 10 100 }}$$ 
-In fact, the above values are the
-default values. Each iteration performs {\tt Nthin}
-steps through the Markov chain.
-The number of iterations required to obtain accurate answers depends
-on the complexity and size of the data set; preliminary runs are useful
-to establish a good run length.
-
-\subsection{Setting the seed ({\tt S})} \label{Soption}
-
-The {\tt -S} option can be used to set the seed of the
-pseudo-random number generator. The seed should be a
-positive integer, and must follow the {\tt -S} after a space, as in:
-$$\text{{\tt ./SCAT2 -S 3253 ...}}$$
-which will set the seed to be 3253. This option can be
-used to deliberately duplicate a previous run, or to make sure 
-that you do {\it not}
-duplicate a previous run.  If the seed is not set, a 
-random number seed based on the computer clock will be used;
-this can lead to multiple runs getting the same seed if they are started
-at almost exactly the same time, for example by a batch program.
-
-\subsection{Isolation by distance parameters ({\tt -f})}
-
-\SCAT uses a model of isolation by distance for the relationship of
-different regional populations' allele frequences:  there is expected to
-be more similarity between populations that are closer together.  The
-behavior of this isolation-by-distance model is controlled by three
-$\alpha$ parameters:  $\alpha_0$ controls the degree to which a regional
-population varies from the expectation established by other populations,
-$\alpha_1$ controls the scaling for the distances, and $\alpha_2$
-controls how quickly correlations between populations drop to 0 with distance.
-These parameters are estimated by \SCAT during the run.
-It also estimates a parameter $\beta$ which governs the variability
-of marker loci.  For a more detailed explanation, see Wasser et al. (2004).
-
-It is helpful to do
-several initial runs, with different values of the seed for the
-random-number-generator (see {\tt -S} option below), to check how many
-iterations are necessary for the values of $\alpha$ and $\beta$ to be
-reliably estimated across runs. For computational reasons, these
-initial runs are best done without setting an assignment option ({\tt -A}
-or {\tt -M}).  If there are
-substantial differences between parameter estimates, or in the range
-of log-likelihoods achieved, in different runs (output in the {\tt
-\_params} file) try increasing the lengths of the runs by increasing
-either the number of iterations ({\tt Niter}) or the thinning interval
-({\tt Nthin}).  The program {\tt TRACER} (see section \ref{software}) can be
-helpful here.  If traces of the parameters appear to move sluggishly,
-increase {\tt Nthin}; if there are directional trends visible in the
-trace over time, increase either {\tt Niter} or {\tt Nthin}; if the
-estimated Effective Sample Size is below 200, increase {\tt Niter}.
-
-The results in Wasser et al. (2004) were obtained by 
-first applying the method (without performing assignments)
-using a relatively large number of iterations (eg
-{Niter=100, Nthin=1000, Nburn=100}), and using the results in the {\tt
-\_param} file to get estimates of $\alpha$ and $\beta$.  Next,
-five independent sets of assignment runs were done with the parameters $\alpha$
-and $\beta$ fixed to their estimated values (see {\tt -f} below), and
-the default run-length settings (Niter=100, Nthin=10, Nburn=200). This
-might be a reasonable general strategy for performing assignments
-(although if the computer time is not prohibitive it might be helpful
-to do assignment runs with a larger Nthin, and not fix $\alpha$ and
-$\beta$). Note that when fixing $\alpha$ and $\beta$ in this way, it
-is recommended that you first find estimates for $\alpha$ and $\beta$
-from the {\tt \_params} file (e. g. their mean, median or mode after
-discarding burnin), and then choose the row of estimates in the {\tt
-\_params} file that is closest (in some sense) to these
-estimates. This will help ensure that the {\it combination} of
-parameter estimates used is somewhat sensible.
-
-You can fix the values of these
-parameters by using {\tt -f}, followed by a space, and then the values
-to use for $(\alpha_0,\alpha_1,\alpha_2,\beta)$ (four values, each
-separated by spaces).
-
-For example,
-$$\text{\tt -f 0.43 5300 0.32 2.3}$$ will fix $\alpha_0 = 0.43, \alpha_1 =
-5300, \alpha_2 = 0.32, \beta = 2.3$.
-
-You can also modify the aggressiveness of the search across $\alpha$
-values using the following option:
-
-{\tt -a sd} set the proposal standard deviation for alpha updates to
-{\tt sd} (default 0.4).  A larger {\tt sd} will correspond to a more
-wide-ranging search of alpha values.
-
-\subsection{Setting error parameters ({\tt -e}}
-
-The assignment analysis machinery allows for the probabilities
-of an erroneous genotype call at one allele
-(error term $\delta$) and of amplification of only one allele (error term
-$\gamma$).  The defaults are set to the values used in Wasser et al. (2004)
-of $\delta = 0.05$ and $\gamma = 0$.  These values can be changed
-using {\tt -e delta gamma}.
-
-\section{Options changing the mathematics or search strategy}
-
-These options change the behavior of the MCMC sampler.  Little information
-is available about their usefulness, but they
-are documented here for completeness.  In the descriptions below, $X$ refers
-to the vector of rescaled allele frequencies described in the
-Online Supplement of Wasser et al. 2004.  The \SCAT algorithm normally
-proposes new values of $X$ one by one, with a variance of 0.5, but
-this can be changed using the options below.
-
-\begin{itemize}
-\item[{\tt -a sd}] set the proposal standard deviation for alpha updates to
-{\tt sd} (default 0.4).  A larger {\tt sd} will correspond to a more
-wide-ranging search of alpha values.
-
-\item[{\tt -h sd}] sets the
-proposal standard deviation for $X$ updates to {\tt sd} times
-$\sqrt{1/\alpha_0}$ (default = 0.5).  A larger {\tt sd} 
-will correspond to a 
-more wide-ranging search of $X$ values.  The higher the value, the further
-the sampler will attempt to move in one step.  Higher values may help
-in preventing the sampler from becoming stuck (diagnosed by persistent
-differences between the outcome of different runs on the same data), while
-lower values may improve acceptance rate (diagnosed by examining the
-Output\_accept file).
-
-\item[{\tt -j}] update $X$ for an allele jointly, rather than one at a time.
-No information is currently available on whether this is
-helpful.
-
-\item[{\tt -N}] includes a ``nugget effect" in the covariance matrix.  
-A nugget effect is variation among samples putatively
-taken at the same point, either because of spatial structure too fine
-for the sampling scheme to capture, or because of measurement error.
-No information is currently available on whether this is helpful, but it
-may be worth considering particularly if your sample locations are
-rather broadly defined and you think within-location population structure
-is likely.
-
-\item[{\tt -r}] use Langevin update for $X$.   This 
-update attempts to improve sampling performance by using the estimated 
-gradient of the local probability density to choose the direction in
-which to move.  The Wikipedia article ``Metropolis-adjusted Langevin 
-algorithm" describes this algorithm.  No information is currently
-available on whether this is helpful, but it may be worth trying if
-mixing is poor.
-
-\item[{\tt -R}] remove
-all samples from a region when doing assignment of individuals from
-that region.  This is a more aggressive form of cross-validation,
-but relies on getting enough allele frequency estimates from nearby
-regions to fill in for the disregarded frequencies for this region, and
-seems unlikely to work unless the data are quite rich and the number of
-regions is fairly large.  It may be particularly appropriate if the
-data consist of a large number of regions, each with only a few
-individuals, so that region-specific empirical allele frequencies rely
-heavily on the few available samples in that region.
-
-\item[{\tt -w}] use smoothing only towards the mean, with no spatial component (ie set
-$\alpha_2 = 0$).  This asserts that the species has no spatial 
-structure, so that all regions other than the one whose frequencies are
-currently being calculated contribute equally to that calculation.  This is
-unlikely for real biological populations, though could possibly serve as
-a comparison point.
-
-\item[{\tt -X}] ``cheat'' by initialising location close to true location in assignment runs.  
-This can be used when assigning locations to 
-individuals whose location is already known or suspected.  The search will
-converge more rapidly if it starts from a mostly-correct solution.
-However, if the search is run for too short a time or mixes poorly, it will
-return its starting location with excessive confidence.  We do not recommend
-the use of this option to generate publishable results.
-It could be used diagnostically to
-test whether the sampler is simply stuck at a poor solution, or is actively
-moving towards a poor solution.
-\end{itemize}
-
-
-%--------------------------------------------
+%---------------------------------------------------------------------
 
 \section{Interpreting the output} \label{interpret}
-
-\subsection{Verbose output: {\tt -v}}
-
-If this option is set, the program dumps its input data into the
-file specified (with a space) after {\tt -v}.   This can be useful
-in verifying that the data were read correctly.  
-As the program continues to run, it keeps you informed of progress
-(burnin iterations, main iterations etc). 
-
-If this option is not set, the program provides little feedback while
-running.
 
 \subsection{Output files} \label{out}
 
@@ -757,7 +493,8 @@ log-likelihood of genotype data, for each iteration of the MCMC
 values of $\alpha_0, \alpha_1, \alpha_2$, $\beta$, and the
 log-likelihood for the corresponding allele frequency estimates.
 This file works well with the Tracer utility (see section \ref{software}) 
-which can display plots of the parameter values over time.  This is helpful in diagnosing poor mixing.
+which can display plots of the parameter values over time.  This is helpful 
+in diagnosing poor mixing.
 
 \item[{\tt \_accept}] Contains summary of (cumulative) acceptance rates
 during MCMC runs. Each line contains data for one iteration of the
@@ -777,7 +514,377 @@ spotting pairs of populations that are much more or less correlated than
 expected based on their geographical distance.
 \end{enumerate}
 
+\subsection{Verbose output: {\tt -v}}
 
+This option causes the program to write an additional output file
+containing the contents of various internal arrays including the
+X arrays, region permutations, counts of observations, 
+and empirical allele frequencies.  The name of the output file
+is given after the {\tt -v}, with a space between them.  This is likely 
+useful only to someone trying to modify or debug the code.
+
+%-----------------------------------------------------------------------
+
+\section{Search parameters} \label{HowLong}
+
+\subsection{Run length}
+\SCAT employs an iterative scheme to perform inference. 
+Parameters that control the number of iterations performed
+can be added to the input line, as follows:
+$$\text{{\small \tt ./SCAT2 <genotype file> <location file> <output
+filename> L Niter Nthin Nburn }}$$ where {\tt Niter} is the number
+of sampled iterations of the MCMC scheme to be performed, {\tt Nthin} is the
+number of steps taken through the Markov chain between samplings (the ``thinning interval") and {\tt
+Nburn} is the number of burn-in iterations.
+
+For example, to set
+$$\text{{\tt Niter=100}}, \text{{\tt Nthin=10}}, \text{{\tt Nburn=100}}$$
+use
+$$\text{{\tt \small./SCAT2 <genotype file> <location file> <output
+filename> L 100 10 100 }}$$ 
+In fact, the above values are the
+default values. Each iteration performs {\tt Nthin}
+steps through the Markov chain.
+The number of iterations required to obtain accurate answers depends
+on the complexity and size of the data set; preliminary runs are useful
+to establish a good run length.
+
+Note that if the VORONOI program will be used for post-processing, it will
+expect to see 100 burn-in and 100 normal sampled iterations; thus, making the
+run longer or shorter will require modifiying {\tt Nthin} so that the same
+number of sampled iterations represented a larger or smaller total number
+of iterations.
+
+\subsection{Setting the seed ({\tt S})} \label{Soption}
+
+The {\tt -S} option can be used to set the seed of the
+pseudo-random number generator. The seed should be a
+positive integer, and must follow the {\tt -S} after a space, as in:
+$$\text{{\tt ./SCAT2 -S 3253 ...}}$$
+which will set the seed to be 3253. This option can be
+used to deliberately duplicate a previous run, or to make sure 
+that you do {\it not}
+duplicate a previous run.  If the seed is not set, a 
+random number seed based on the computer clock will be used;
+this can lead to multiple runs getting the same seed if they are started
+at almost exactly the same time, for example by a batch program.
+
+If you are trying to debug an issue with the program we strongly
+recommend setting the seed so that you can replicate your run.  The
+executation path of \SCAT can vary quite a bit from one run to the
+next if the seed is not the same.
+
+\subsection{Isolation by distance parameters}
+
+\SCAT uses a model of isolation by distance for the relationship of
+different regional populations' allele frequences:  there is expected to
+be more similarity between populations that are closer together.  The
+behavior of this isolation-by-distance model is controlled by three
+$\alpha$ parameters:  $\alpha_0$ controls the degree to which a regional
+population varies from the expectation established by other populations,
+$\alpha_1$ controls the scaling for the distances, and $\alpha_2$
+controls how quickly correlations between populations drop to 0 with distance.
+These parameters are estimated by \SCAT during the run.
+It also estimates a parameter $\beta$ which captures the variability
+of marker loci.  For a more detailed explanation, see Wasser et al. (2004).
+
+Two approaches can be taken to these parameters.  Initial non-assignment
+runs can be used to estimate them, as done in Wasser et al. (2004), and then
+they can be fixed to the estimated values.  One can additionally assume
+that the estimated values can be re-used for other samples from the same
+species.  Alternatively, the parameters can be co-estimated along with
+the assignments, which probably requires more MCMC steps for accuracy.
+
+\subsubsection{Initializing the parameters ({\tt -i})}
+
+The $\alpha$ and $\beta$ parameters can be initialized to desired values
+using {\tt -i} followed by, in order, values for 
+$(\alpha_0,\alpha_1,\alpha_2,\beta)$ separated by spaces.
+If good values are known, this might speed up the process of finding better
+ones.  
+
+\subsubsection{Estimating and then fixing the parameters}
+
+In Wasser et al. (2004)
+the program was run with a large number of iterations ({Niter=100, Nthin=1000,
+Nburn=100}) and the results in the {\tt \_param} file were used to estimate
+the $\alpha$ and $\beta$ parameters.  Such runs are best done without assignment,
+for speed.  The parameters were then fixed to their estimated values for the
+assignment runs.  This is done by using
+{\tt -f}, followed by a space, and then the values
+to use for $(\alpha_0,\alpha_1,\alpha_2,\beta)$ (four values, each
+separated by spaces).  
+For example,
+$$\text{\tt -f 0.43 5300 0.32 2.3}$$ will fix $\alpha_0 = 0.43, \alpha_1 =
+5300, \alpha_2 = 0.32, \beta = 2.3$.
+
+Note that when fixing $\alpha$ and $\beta$ in this way, it
+is recommended that you first find estimates for $\alpha$ and $\beta$
+from the {\tt \_params} file (e. g. their mean, median or mode after
+discarding burnin), and then choose the row of estimates in the {\tt
+\_params} file that is closest (in some sense) to these
+estimates. This will help ensure that the {\it combination} of
+parameter estimates used is somewhat sensible.
+It is also helpful to do
+several initial runs, with different values of the seed for the
+random-number-generator (see {\tt -S} option below), to check how many
+iterations are necessary for the values of $\alpha$ and $\beta$ to be
+reliably estimated across runs. 
+If there are
+substantial differences between parameter estimates, or in the range
+of log-likelihoods achieved, in different runs (output in the {\tt
+\_params} file) try increasing the lengths of the runs by increasing
+either the number of iterations ({\tt Niter}) or the thinning interval
+({\tt Nthin}).  The program {\tt TRACER} (see section \ref{software}) can be
+helpful here.  If traces of the parameters appear to move sluggishly,
+increase {\tt Nthin}; if there are directional trends visible in the
+trace over time, increase either {\tt Niter} or {\tt Nthin}; if the
+estimated Effective Sample Size is low, increase {\tt Niter}.
+
+The program also contains a menu option {\tt -b} to fix $\beta$ only,
+while allowing the $\alpha$ parameters to be estimated.  If this is
+used alone it will fix $\beta$ to its default of 1.0, as found in
+scat2.hpp.  The {\tt -i} option can be used to provide a different
+value. 
+
+\subsubsection{Co-estimating assignment and parameters}
+
+The Center for Conservation Biology's current approach
+to using \SCAT is to estimate the $\alpha$ and $\beta$ parameters during
+assignment.  This was not feasible in 2004 but has become more so, although
+assignment runs done this way can take several days to complete for around
+200-300 individuals.  Our current practice is to use Niter=100, Nthin=20,
+Nburn=100.  (If the postprocessor VORONOI is to be used, Niter should
+always be set to 100.)  We run 9 replicates of each \SCAT run with
+different random number seeds, both to meet VORONOI requirements and
+to assess consistency across runs.  It is probably better to do 9
+medium length runs than 1 very long run, as the variation in starting
+points can help the program search its entire space more effectively.
+
+\subsubsection{Modifying the search in $\alpha$  ({\tt -a})}
+
+You can also modify the aggressiveness of the search across $\alpha$
+values using the following option:
+
+{\tt -a sd} set the proposal standard deviation for alpha updates to
+{\tt sd} (default 0.4).  A larger {\tt sd} will correspond to a more
+wide-ranging search of alpha values.
+
+\subsubsection{Turning off estimation of $\mu$ ({\tt -m})}
+
+The parameter vector $\mu$ holds estimates of the population-wide
+allele frequencies at each locus; the individual sampling locations
+are considered to vary around these frequencies.  Normally they
+are allowed to vary during the MCMC run.  The {\tt -m} option
+will instead fix them at values estimated from the initial data,
+and will also fix $\beta$ at its starting value.
+This might possibly be useful if the program is otherwise
+unacceptably slow.
+
+\subsection{Setting error parameters ({\tt -e})}
+
+The assignment analysis machinery allows for the probabilities
+of an erroneous genotype call at one allele
+(error term $\delta$) and of amplification of only one allele (error term
+$\gamma$).  The defaults are set to the values used in Wasser et al. (2004)
+of $\delta = 0.05$ and $\gamma = 0$.  These values can be changed
+using {\tt -e delta gamma}.
+
+
+
+%--------------------------------------------------------------------
+
+\section{Cautions for use of the software} \label{cautions}
+
+\SCAT carries out an MCMC search.  If the search is too short or mixes
+poorly, the results may be inaccurate and their certainty will be overstated.  The program
+{\tt TRACER} (see section \ref{software}) may be useful in diagnosing poor
+searches.  Another diagnostic for too-short runs is getting dramatically different
+results from multiple runs that differ only in their random number seed.
+
+\SCAT can only handle diploid data.  Coding haploids as one known haplotype and
+one missing-data haplotype does not work, since a locus with any missing
+data is disregarded.
+
+The code which sets the boundaries of the organism's range
+will not work correctly if the range crosses the line opposite
+the Prime Meridian or includes either pole.  Nothing is done by the code to
+diagnose such problems.  
+The grid boundary approach may also be problematic if the species has a wide
+north-south distribution approaching either pole, as the size of the grid 
+squares is assumed to be roughly constant and this will not be the case.
+If such a species needs to be analyzed, we recommend rescaling the latitudes and
+longitudes to make them tractable, and then reversing the rescaling before
+interpreting the data.  
+
+If the species occurs as widely separated patches, using a grid file
+to specify correct species boundaries may cause the continuous assignment algorithm
+to become stuck on the first solution it finds because other solutions are 
+``too far away" in the patchy map.  You can diagnose this by making
+multiple runs with different random number seeds:  if each run places a
+given individual with great certainty, but different runs place the
+individual in different patches, this problem is likely occuring.  Combining
+estimates across multiple runs will give a better estimate than any
+single run.  Otherwise, it may be necessary to make the map more continuous
+even if this requires adding areas where the organism is not found, or to
+use smoothing rather than continuous assignment.
+
+\SCAT assumes that markers are unlinked.  Tightly linked markers will
+cause the accuracy of the results to be overstated.  Sequencing individual
+genes and then using all variable sites within them as markers is likely
+to cause this problem and cannot be recommended as a way to obtain \SCAT
+input data.
+
+\SCAT assumes that allele frequencies change smoothly with geographic
+distance.  If there are strong discontinuities in gene flow, it will
+inappropriately use populations which are nearby but separated by the
+discontinuity to inform each others' allele frequencies.  It may be
+helpful to separate the discontinuous areas into separate \SCAT runs,
+as was done for forest and savannah elephants in Wasser et al. (2004).
+
+There is a hard-coded constant for MAXNALLELE, the maximum number
+of alleles per locus, near the top of file scat2.hpp.  It is set to 120
+by default, which is sufficient for microsatellite data and overkill for
+SNP data.  If you have loci with more alleles than this, edit the
+file and then type ``make clean" followed by ``make".  If you are using
+SNP data it may be helpful to set this constant to 5 (four bases and unknown
+data) in order to save memory.
+
+The practice of summarizing \SCAT results as median latitude and
+median longitude can be misleading if the individual's
+inferred distribution is patchy or irregular in shape.  Displaying
+a heatmap of all \SCAT results for that individual may be preferable,
+and/or reporting the bounding region containing a given percentage
+of the estimates.
+
+In our hands, \SCAT does a poor job localizing individuals which are
+hybrids between distant populations or species.  We recommend the use
+of {\tt EBhybrids} (see section \ref{software}) to remove putative hybrids.
+Our preliminary studies suggest that hybrids in the reference data do
+relatively little harm, but the inferred locations of hybrid individuals are
+unreliable. 
+
+Occasionally the heatmap of an individual may resemble a thin rim around the
+very edge of the organism's range.  In our experience this may mean that
+the individual is a hybrid, or that it comes from a location which has been
+incorrectly excluded from the range.  In either case, the program finds that
+the individual is a poor fit for all sampling locations, so moves it as far
+away from all of them as possible, leading to the thin rim.  An alternative
+explanation is some form of error in the genotype data, such as misordering
+the columns.
+
+Another unusual outcome is an individual whose continuous assignment is
+spread across the whole map.  If other members of the species can be more
+narrowly assigned, this individual may be a hybrid, or may have too much
+missing data.  In some cases missing data at one or a few highly informative
+microsatellite loci can render an individual very difficult to localize.
+
+\section{Other software useful in conjunction with \SCAT} \label{software}
+
+These programs are listed as a convenience to the user; we do not
+guarantee their availability, compatibility, or performance.
+
+\begin{itemize}
+\item {\tt STRUCTURE} ({\tt http://pritch.bsd.uchicago.edu/}) -- estimate
+population admixture and assign individuals to populations.
+\item {\tt EBhybrids} ({\tt https://github.com/stephenslab/EBhybrids}) -- 
+postprocess {\tt STRUCTURE} output to infer hybrid probability for each 
+individual.  In our experience, hybrid individuals are difficult for \SCAT 
+to assign and it may be best to remove them or at least treat their
+inferred locations with skepticism.
+\item {\tt TRACER} ({\tt https://beast.community/tracer}) -- display behavior
+of an MCMC run over time.  With minimal processing, the {\tt Output\_params}
+file can be read into {\tt TRACER} to visualize the progress of the run,
+which is useful in diagnosing poor mixing or too-short runs.
+\item {\tt VORONOI} ({\tt https://github.com/stephens999/voronoi}) --
+postprocess \SCAT estimates to refine continuous assignment on the
+assumption that the location-unknown samples may be spatially clustered
+relative to the reference samples.
+\end{itemize}
+
+\section{Options changing the mathematics or search strategy}
+
+These options change the behavior of the MCMC sampler.  Little information
+is available about their usefulness, but they
+are documented here for completeness.  In the descriptions below, $X$ refers
+to the vector of rescaled allele frequencies described in the
+Online Supplement of Wasser et al. 2004.  The \SCAT algorithm normally
+proposes new values of $X$ one by one, with a variance of 0.5, but
+this can be changed using the options below.
+
+\begin{itemize}
+\item[{\tt -h sd}] sets the
+proposal standard deviation for $X$ updates to {\tt sd} times
+$\sqrt{1/\alpha_0}$ (default = 0.5).  A larger {\tt sd} 
+will correspond to a 
+more wide-ranging search of $X$ values.  The higher the value, the further
+the sampler will attempt to move in one step.  Higher values may help
+in preventing the sampler from becoming stuck (diagnosed by persistent
+differences between the outcome of different runs on the same data), while
+lower values may improve acceptance rate (diagnosed by examining the
+Output\_accept file).
+
+\item[{\tt -I}] suppresses permutation of the order in which regions are
+considered.  The program default is to permutate the region order in each
+run; this causes runs with different random number seeds to process the
+regions in different orders, increasing the chance that multiple searches
+will explore different parts of the search space.  It is not clear why you
+would want to turn this behavior off, other than for debugging.
+
+\item[{\tt -j}] update $X$ for an allele jointly, rather than one at a time.
+No information is currently available on whether this is
+helpful.
+
+\item[{\tt -N}] includes a ``nugget effect" in the covariance matrix.  
+A nugget effect is variation among samples putatively
+taken at the same point, either because of spatial structure too fine
+for the sampling scheme to capture, or because of measurement error.
+No information is currently available on whether this is helpful, but it
+may be worth considering particularly if your sample locations are
+rather broadly defined and you think within-location population structure
+is likely.
+
+
+\item[{\tt -r}] use Langevin update for $X$.   This 
+update attempts to improve sampling performance by using the estimated 
+gradient of the local probability density to choose the direction in
+which to move.  The Wikipedia article ``Metropolis-adjusted Langevin 
+algorithm" describes this algorithm.  No information is currently
+available on whether this is helpful, but it may be worth trying if
+mixing is poor.
+
+\item[{\tt -R}] remove
+all samples from a region when doing assignment of individuals from
+that region.  This is a more aggressive form of cross-validation,
+but relies on getting enough allele frequency estimates from nearby
+regions to fill in for the disregarded frequencies for this region, and
+seems unlikely to work unless the data are quite rich and the number of
+regions is fairly large.  It may be particularly appropriate if the
+data consist of a large number of regions, each with only a few
+individuals, so that region-specific empirical allele frequencies rely
+heavily on the few available samples in that region.
+
+\item[{\tt -w}] use smoothing only towards the mean, with no spatial component (ie set
+$\alpha_2 = 0$).  This asserts that the species has no spatial 
+structure, so that all regions other than the one whose frequencies are
+currently being calculated contribute equally to that calculation.  This is
+unlikely for real biological populations, though could possibly serve as
+a comparison point.
+
+\item[{\tt -X}] ``cheat'' by initialising location close to true location in assignment runs.  
+This can be used when assigning locations to 
+individuals whose location is already known or suspected.  The search will
+converge more rapidly if it starts from a mostly-correct solution.
+However, if the search is run for too short a time or mixes poorly, it will
+return its starting location with excessive confidence.  We do not recommend
+the use of this option to generate publishable results.
+It could be used diagnostically to
+test whether the sampler is simply stuck at a poor solution, or is actively
+moving towards a poor solution.
+\end{itemize}
+
+
+%--------------------------------------------
 
 
 
@@ -785,10 +892,6 @@ expected based on their geographical distance.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Sectors and hybrids}
-
-{\bf The documentation, code comments, and code for these options do
-not agree and their correctness in the current version is not known.
-We do not recommend their use.}
 
 The use of \SCAT for hybrid detection
 has been superseded by the {\tt EBhybrids}
@@ -804,10 +907,11 @@ not captured by the isolation-by-distance method.
 between sectors.  Unless the regions are genetically
 distinct, hybrid identification will be very difficult; hence the
 use of sectors.  \SCAT can also attempt to assign locations to
-identified hybrids, but this is also problematic.  One may instead
-remove identified hybrids from the analysis.
+identified hybrids, but this is also problematic.  It is often better
+to remove identified hybrids from the analysis.
 
-Hybrid testing is turned on with the {\tt -H} option where the H is
+Sector assignment and/or hybrid identification are
+turned on with the {\tt -H} option where the H is
 followed immediately (no space) by a numeric option.  There are three
 meaningful options:
 
@@ -847,30 +951,7 @@ for $(j_1,j_2) = (0,0), (0,1),\dots,(0,5),(1,0),(1,1),\dots,(1,5),\dots, (5,5)$.
 The maximum entry in a row can be taken as an estimate of the individual's
 origin.  For the hybrid cases, the overall probability that an individual is
 a hybrid can be taken as the sum of all entries in the row except those indicating
-both parent from the same region or sector.
-
-\section{Other software useful in conjunction with \SCAT} \label{software}
-
-These programs are listed as a convenience to the user; we do not
-guarantee their availability, compatibility, or performance.
-
-\begin{itemize}
-\item {\tt STRUCTURE} ({\tt http://pritch.bsd.uchicago.edu/}) -- estimate
-population admixture and assign individuals to populations.
-\item {\tt EBhybrids} ({\tt https://github.com/stephenslab/EBhybrids}) -- 
-postprocess {\tt STRUCTURE} output to infer hybrid probability for each 
-individual.  In our experience, hybrid individuals are difficult for \SCAT 
-to assign and it may be best to remove them or at least treat their
-inferred locations with skepticism.
-\item {\tt TRACER} ({\tt https://beast.community/tracer}) -- display behavior
-of an MCMC run over time.  With minimal processing, the {\tt Output\_params}
-file can be read into {\tt TRACER} to visualize the progress of the run,
-which is useful in diagnosing poor mixing or too-short runs.
-\item {\tt VORONOI} ({\tt https://github.com/stephens999/voronoi}) --
-postprocess \SCAT estimates to refine continuous assignment on the
-assumption that the location-unknown samples may be spatially clustered
-relative to the reference samples.
-\end{itemize}
+both parents from the same region or sector.
 
 
 \section{Changes to the software} 
@@ -890,33 +971,56 @@ A bug in computation of the likelihood for sectors was fixed.
 
 At some point a change was introduced (probably accidentally) which caused the log probabilities
 in file {\tt Output\_probs} to be printed in hexadecimal; it is not known
-if this feature was already in 2.0 or was introduced in 2.1.
+if this behavior was already in 2.0 or was introduced in 2.1.
 
 \subsection{Changes between 2.1 and 2.2}
 
-From this version on, maintenance is being performed by Mary Kuhner
+From this version on, maintenance has been performed by Mary Kuhner
 (mkkuhner@uw.edu).
 
-Corrections: The probabilities in file Output\_probs were
-changed to decimal; this may disrupt scripts written for the previous
+\subsubsection{Corrections}
+An initialization bug was fixed.  This only disrupted
+the first burnin step, and likely had little impact on correctness; however,
+runs after this fix will not be numerically identical to those before,
+as the MCMC search will take a randomly different path.
+
+The probabilities in file Output\_probs were
+changed (back) to decimal; this may disrupt scripts written for the previous
 version. 
 
-Improvements:  
-Version number was added. 
-The Makefile was revised so that "make" makes the \SCAT executable.
+\subsubsection{Improvements}
+Version number was added.  The Makefile was revised so that "make" makes 
+the \SCAT executable.
 Function templates were moved to a file {\tt scat2.hpp}.
-The hard-coded limit on number of regions was removed; the program can
-now adapt to any reasonable number of regions.
 The documentation was extensively rewritten.
+
+The hard-coded limit on number of regions was removed; the program can
+now handle any reasonable number of regions and does not need
+recompilation to do so.
+
+Printing of input data to screen at the start of a run was turned off
+by default, and option {\tt -E} was added to turn it back on if desired.
+Progress reports during a run were greatly reduced; {\tt -E} will
+restore those as well.  These changes are
+meant to reduce the chance that an important message will be
+lost in reams of routine output.
 
 Increased error checking of input options and data was added.  Specifically,
 each individual is now required to have exactly two haplotypes, and the
 number of loci must be the same for all haplotypes of all individuals.
+Runtime options which take numbers as input now check if they are legal;
+options which take filenames check if the file exists.
 
-Removals:
+Internal variable handling was extensively revised to improve maintainability.
+This should not impact correctness but may cause the MCMC search to take a
+different path due to rounding differences.
+
+\subsubsection{Removals}
 Option {\tt -z} which caused certain individuals to be deleted
 from the data was removed; it had been added to test a specific hypothesis
 on a specific data set and was not suitable for distribution.
+Options which set parameters no longer used in the code were
+also removed:  {\tt -c, -F, -T}.
 
 %Options to set the maximum number of loci and
 %alleles without recompilation, which had been
@@ -924,14 +1028,7 @@ on a specific data set and was not suitable for distribution.
 
 \subsection{Changes between 2.2 and 2.3}
 
-Corrections:  An initialization bug was corrected.  This only disrupted
-the first burning step, and likely had little impact on correctness; however,
-runs after this fix will not be numerically identical to those before,
-as the MCMC search will take a randomly different path.
 
-Internal variable handling was extensively revised to improve maintainability.
-This should not impact correctness but may cause the MCMC search to take a
-different path due to rounding differences.
 
 \section{How to cite this program}
 
@@ -948,7 +1045,8 @@ to the ivory trade.  PNAS 101: 14847-14852.
 The software makes use of the LAPACK linear algebra routines for
 finding the Cholesky decomposition of a matrix, and a version of the
 {\tt wn\_PnPoly()} algorithm by Dan Sunday 
-$$(\text{\tt http://www.softsurfer.com/Archive/algorithm\_0103/algorithm\_0103.htm})$$.
+$$(\text{\tt http://www.softsurfer.com/Archive/algorithm\_0103/algorithm\_0103.htm})$$
+for finding which areas are within an arbitrary polygon.
 
 
 %\bibliographystyle{chicago}
