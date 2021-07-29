@@ -60,7 +60,6 @@ int LOCATEWHOLEREGION = 0;
 int INCLUDENUGGET = 0;
 int SKIPCOL = 0;
 
-int NUMBERREGIONSFROM = 1; // what's the first region numbered? see T flag
 int READBOUNDARY = 0;
 int READGRID = 0;
 

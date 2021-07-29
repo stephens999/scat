@@ -2510,7 +2510,9 @@ int main ( int argc, char** argv)
       break;
 
     case 'n':
-      UPDATENU =0;
+      // DEBUG, disabled as part of undeveloped multi-species machinery
+      cout << "option 'n' [disable nu updated] disabled at this time" << endl;
+      // UPDATENU =0;
       break;
 
     case 'N':
@@ -2533,12 +2535,6 @@ int main ( int argc, char** argv)
       ++argv;
       --argc;
       SEED = atoi(&argv[1][0]);
-      break;
-
-    case 'T': // number regions from 0
-       ++argv;
-      --argc;
-      NUMBERREGIONSFROM = atoi(&argv[1][0]);
       break;
 
     case 'v':
