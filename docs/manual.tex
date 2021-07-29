@@ -27,7 +27,7 @@
 \pagenumbering{arabic}
 \begin{document}
 
-\title{Documentation for {\tt SCAT}, version 2.3}
+\title{Documentation for {\tt SCAT}, version 3.0}
 
 \author{
 Software code and documentation by Matthew Stephens\footnote{email: {\tt mstephens@uchicago.edu}} \\
@@ -35,7 +35,7 @@ WWW: {\tt http://github.com/stephens999/scat}\\
 \\
 }
 
-\date{September 28 2004; updated September 15 2015; revised by Mary Kuhner\footnote{email:  {\tt mkkuhner@uw.edu}} July 5 2021}
+\date{September 28 2004; updated September 15 2015; revised by Mary Kuhner\footnote{email:  {\tt mkkuhner@uw.edu}} July 28 2021}
 
 
 \maketitle
@@ -76,7 +76,9 @@ Wasser et al. (2004).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{Getting started: installing and running the software} \label{started}
+\section{Getting started: compiling and running the software} \label{started}
+
+\subsection{Compiling}
 
 \SCAT was previously distributed as executables for MAC OSX and
 Linux, but currently only for Linux.  Users of other operating systems
@@ -112,9 +114,11 @@ and inserting a hash (\#) at the beginning, and locating the following line:
 
 and removing its hash.  Then type {\tt make clean} and {\tt make}.   
 The resulting code will be much slower and we recommend this only if you 
-are using a debugger.  It will also do extensive checking for internal
+are using a debugger.  The debugging version does extensive checking for internal
 consistency; if the program runs in optimized mode but aborts in 
 debug mode, we would very much appreciate a bug report.
+
+\subsection{Running the program}
 
 The program can be used in two different ways:
 \begin{itemize}
@@ -403,6 +407,12 @@ by the filename of the grid file:
 
 Note that there is a space between the option and the filename.
 
+The program's search area for continuous assignment will be formed by determining
+the minimum square capable of containing all of the specified 
+grid squares and add a 7 square margin around the edges to avoid edge effects.
+(This margin size is specified as MARGIN in file scat2.hpp, if you need
+to change it.)
+
 \subsubsection{Boundary file:  {\tt -B} option}
 The region can be specified as a polygon by entering the latitude and longitude of
 each consecutive vertex into a ``boundary'' file (see below), and using
@@ -432,7 +442,6 @@ $2^\circ W$ to $1^\circ E$ the file could be
 The routine that tests whether a point is inside or outside the polygon
 is based on the 2-D algorithm helpfully
 described by Dan Sunday ({\tt http://www.softsurfer.com}). 
-Limitations of the algorithm are described in section \ref{cautions}.
 
 \subsubsection{Pre-loaded Afrian elephant location data}
 
@@ -513,6 +522,18 @@ with distance.  This file may be useful for model checking, specifically
 spotting pairs of populations that are much more or less correlated than
 expected based on their geographical distance.
 \end{enumerate}
+
+\subsection{Individual assignment files}
+
+If either assignment option is set, the program will also write one file
+per sample analyzed, with a filename of the sample name.  These files
+contain results from the continuous assignment algorithm, one result per
+line, for both burn-in and standard iterations (burn-in iterations should
+generally be discarded).  Each line contains, in order, the decimal
+latitude, decimal longitude, and log-likelihood of that sample's assignment
+for that iteration.  The medians of the non-burn-in latitudes and longitudes
+can be considered point estimates of the sample's origin, or the
+entire distribution can be considered as an area estimate.
 
 \subsection{Verbose output: {\tt -v}}
 
@@ -973,10 +994,10 @@ At some point a change was introduced (probably accidentally) which caused the l
 in file {\tt Output\_probs} to be printed in hexadecimal; it is not known
 if this behavior was already in 2.0 or was introduced in 2.1.
 
-\subsection{Changes between 2.1 and 2.2}
+\subsection{Changes between 2.1 and 3.0}
 
-From this version on, maintenance has been performed by Mary Kuhner
-(mkkuhner@uw.edu).
+These changes were made by Mary Kuhner and Jon Yamato, with permission of the
+original author.
 
 \subsubsection{Corrections}
 An initialization bug was fixed.  This only disrupted
@@ -985,20 +1006,23 @@ runs after this fix will not be numerically identical to those before,
 as the MCMC search will take a randomly different path.
 
 The probabilities in file Output\_probs were
-changed (back) to decimal; this may disrupt scripts written for the previous
+changed (back?) to decimal; this may disrupt scripts written for the previous
 version. 
 
 \subsubsection{Improvements}
 Version number was added.  The Makefile was revised so that "make" makes 
-the \SCAT executable.
-Function templates were moved to a file {\tt scat2.hpp}.
+the \SCAT executable.  Function templates were moved to a file {\tt scat2.hpp}.
 The documentation was extensively rewritten.
 
-The hard-coded limit on number of regions was removed; the program can
-now handle any reasonable number of regions and does not need
-recompilation to do so.
+The hard-coded limits on number of regions and number of loci were removed; 
+the program can now handle any reasonable number of regions and loci and does not need
+recompilation to do so.  Unfortunately, there is still a hard-coded limit
+on number of alleles per locus, set to 120 in the distribution version; if you
+have any loci with more than 120 alleles you will need to modify this and
+recompile.  (If you have much fewer alleles per locus, and suspect you are
+running out of space, setting this lower may help.)
 
-Printing of input data to screen at the start of a run was turned off
+Printing of input data to screen at the start of a run is now turned off
 by default, and option {\tt -E} was added to turn it back on if desired.
 Progress reports during a run were greatly reduced; {\tt -E} will
 restore those as well.  These changes are
@@ -1006,12 +1030,13 @@ meant to reduce the chance that an important message will be
 lost in reams of routine output.
 
 Increased error checking of input options and data was added.  Specifically,
-each individual is now required to have exactly two haplotypes, and the
+each individual is now verified to have exactly two haplotypes, and the
 number of loci must be the same for all haplotypes of all individuals.
 Runtime options which take numbers as input now check if they are legal;
-options which take filenames check if the file exists.
+options which read from files check if the file exists.
 
-Internal variable handling was extensively revised to improve maintainability.
+Internal variable handling was extensively revised to improve maintainability
+(mainly changes from C arrays to C++ std::vector).
 This should not impact correctness but may cause the MCMC search to take a
 different path due to rounding differences.
 
@@ -1020,15 +1045,11 @@ Option {\tt -z} which caused certain individuals to be deleted
 from the data was removed; it had been added to test a specific hypothesis
 on a specific data set and was not suitable for distribution.
 Options which set parameters no longer used in the code were
-also removed:  {\tt -c, -F, -T}.
+also removed:  {\tt -c, -F, -T}.  An option {\tt -E} which claimed
+to allow resetting of the upper limits on loci and alleles (but
+actually did nothing) was been removed and its letter repurposed.
 
-%Options to set the maximum number of loci and
-%alleles without recompilation, which had been
-%present but nonfunctional in the code, were made functional.  
-
-\subsection{Changes between 2.2 and 2.3}
-
-
+%------------------------------------------------------------------------------
 
 \section{How to cite this program}
 

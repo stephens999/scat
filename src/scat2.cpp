@@ -459,6 +459,8 @@ void OutputAcceptRates(ostream & ostr)
 
 void output_positions_data(const vector<string> & RegionName, const vector<int> & Region, const vector<double> & x, const vector<double> & y, const vector<string> & Id){
 
+        cout << "ID : RegionName, LatitudeRadians, LongitudeRadians" << endl;
+
 	for(int i=0; i<Region.size(); i++){
 		if(Region[i]>=0)
 		cout << Id[i] << " : " << RegionName[Region[i]] << "," << x[Region[i]] << "," << y[Region[i]] << endl;

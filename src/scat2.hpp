@@ -67,7 +67,6 @@ int READGRID = 0;
 int PERMUTE = 1;
 int VERBOSE = 0;
 
-int OUTPUTSAMPLEFREQ = 0;
 double TEMPERATURE = 1; //0.0001;
 double ALPHAUPDATESD = 0.4;
 
