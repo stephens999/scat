@@ -185,7 +185,7 @@ int IsInsideBoundary( double x, double y, const DoubleVec1d& BoundaryX, const Do
   int    wn = 0;    // the winding number counter
   
   // loop through all edges of the polygon
-  for (int i=0; i < (BoundaryX.size()-1); i++) {   // edge from V[i] to V[i+1]
+  for (unsigned long i=0; i < (BoundaryX.size()-1); i++) {   // edge from V[i] to V[i+1]
     if (BoundaryY[i] <= y) {         // start y <= P.y
       if (BoundaryY[i+1] > y)      // an upward crossing
 	if (isLeft( BoundaryX[i], BoundaryY[i], BoundaryX[i+1], BoundaryY[i+1], x, y) > 0)  // P left of edge
@@ -203,6 +203,10 @@ int IsInsideBoundary( double x, double y, const DoubleVec1d& BoundaryX, const Do
 
 void InitialiseXY(vector<double> & BoundaryX, vector<double> & BoundaryY, vector<double> & Xcoord, vector<double> & Ycoord, const Mapgrid& mymapgrid)
 {
+  cout << "Before the routine executes" << endl;
+  for(int reg= 0; reg < NREGION-1; ++reg) {
+    cout << reg << " " << Xcoord[reg] << " " << Ycoord[reg] << endl;
+  }
   if(FORESTONLY){
     Xcoord[NREGION-1] = 0.2;
     Ycoord[NREGION-1] = 0.1;
@@ -213,6 +217,11 @@ void InitialiseXY(vector<double> & BoundaryX, vector<double> & BoundaryY, vector
     Xcoord[NREGION-1] = Xcoord[TRUEREGION]+rnorm(0,0.001); // these lines "cheat" by starting with 
     Ycoord[NREGION-1] = Ycoord[TRUEREGION]+rnorm(0,0.001); // initial guess close to true location
   } else {
+// The commented out code picks a random origin near the center of the reference
+// regions.  This can sometimes fail.  I replace it with picking a random reference
+// population, which is perhaps less accurate but should always work (if the reference
+// populations are not in range you have other problems).
+#if 0
     double Xcenter = 0;
     double Ycenter = 0;
     for(int r = 0; r<(NREGION-1); r++){
@@ -228,11 +237,32 @@ void InitialiseXY(vector<double> & BoundaryX, vector<double> & BoundaryY, vector
         exit(-1);
       }
       double lambda = ranf();
+      float randpick = ranf();
+      if (randpick == 1.0) {
+        cerr << "ranf() returned 1.0; need to guard against this" << endl;
+        exit(-1);
+      }
       int r = (int) (ranf() * (NREGION-1));
       Xcoord[NREGION-1] = lambda * Xcenter + (1-lambda) * Xcoord[r];
       Ycoord[NREGION-1] = lambda * Ycenter + (1-lambda) * Ycoord[r];
       ntries++;
     } while(InRange(Xcoord[NREGION-1],Ycoord[NREGION-1],BoundaryX,BoundaryY,mymapgrid)==0);
+#endif
+    float randpick = ranf();
+    if (randpick == 1.0) {
+      cerr << "ranf() returned 1.0; need to guard against this" << endl;
+      exit(-1);
+    }
+    int randomreg = (int) (randpick * (NREGION - 1));
+    Xcoord[NREGION-1] = Xcoord[randomreg];
+    Ycoord[NREGION-1] = Ycoord[randomreg];
+    if(!InRange(Xcoord[NREGION-1],Ycoord[NREGION-1],BoundaryX,BoundaryY,mymapgrid)) {
+      cerr << "\nReference population " << randomreg << " at " << Xcoord[NREGION-1] << " " << Ycoord[NREGION-1] << " appears to be outside the map:  terminating" << endl;
+      for(int reg=0; reg < NREGION; reg++) {
+        cout << reg << " " << Xcoord[reg] << " " << Ycoord[reg] << endl;
+      }
+      exit(-1);
+    }
   }
 }
 
@@ -258,7 +288,7 @@ int GetLocationNumber(vector<int> & RegionsPresent, int r)
   if(r <0)
     return r;
   
-  int s;
+  unsigned long s;
   for(s = 0; s<RegionsPresent.size(); s++){
     if(RegionsPresent[s] == r)
       break;
@@ -271,7 +301,7 @@ int GetLocationNumberAdd(vector<int> & RegionsPresent, int r)
 	  if(r <0)
 		      return r;
 
-	    int s;
+	    unsigned long s;
 	      for(s = 0; s<RegionsPresent.size(); s++){
 		          if(RegionsPresent[s] == r)
 				        break;
@@ -285,7 +315,7 @@ int GetLocationNumberAdd(vector<int> & RegionsPresent, int r)
 
 
 void permute_regions (vector<int> & Region, vector<int> & Perm){
-	for(int r = 0; r< Region.size(); r++){
+	for(unsigned long r = 0; r< Region.size(); r++){
 		if(Region[r]>=0){
 			Region[r] = Perm[Region[r]];
 		}
@@ -330,92 +360,86 @@ void input_genotype_data( ifstream & input, vector<int>  & Region,
   
   string line;
   line.assign(getline(pbuf));
-  // cout << "READING GENOTYPE DATA" << endl;
   cout << "Reading Genotype Data" << endl;
+  // the following loop processes the two lines of one sample
   while(line.size()>0){
-	for(int chrom = 0; chrom<2; chrom++){
-  		int beg = line.find_first_not_of(delimit, 0);
-    	int end = line.find_first_of(delimit, beg);
-    	if(end == beg) break;
-    	string sv(line, beg, end-beg);
-    	if(chrom==0){
-  	  Id.push_back(sv);
-	  NMissing.push_back(0);
-	  vector<vector<int> > blank(2,vector<int>(NLOCI,badallele));
-	  Genotype.push_back(blank);
-        } else {
-          if (sv != Id.back()) {
-            string msg = "Second entry for " + Id.back() + "not found";
+    for(int chrom = 0; chrom<2; chrom++){
+      int beg = line.find_first_not_of(delimit, 0);
+      int end = line.find_first_of(delimit, beg);
+      if(end == beg) break;
+
+      // process sample ID 
+      string sv(line, beg, end-beg);
+      if(chrom==0){
+        Id.push_back(sv);
+	NMissing.push_back(0);
+	vector<vector<int> > blank(2,vector<int>(NLOCI,badallele));
+	Genotype.push_back(blank);
+      } else {
+        if (sv != Id.back()) {
+          string msg = "Second entry for " + Id.back() + "not found";
+          error_and_exit(msg);
+        }
+      }
+		
+      // process location number
+      beg = line.find_first_not_of(delimit, end);
+      end = line.find_first_of(delimit, beg);
+      sv = line.substr(beg, end-beg);
+      int r = atoi(sv.data());	
+      if(!useregion) {
+        r= -1;
+      } else { 
+        r = GetLocationNumberAdd(RegionsPresent, r);
+        if(r <(-1)) { 
+          cerr << "Error in numbering of locations in genotype file" << endl;
+          cerr << "Individal ID = " << Id[Id.size()-1] << endl;
+          exit(1);
+        }
+      }
+      if(chrom==1) {
+        if(r>=0) {
+          if(r != Region.back()) {
+            string msg = "Two haplotypes of the same individual in different regions";
             error_and_exit(msg);
           }
         }
+      }
+      if(chrom==0){
+        if(r<0 && NSPECIES > 1) {
+          cerr << "Error: mustn't have individuals of unknown location with more than 1 species" << endl;
+	  exit(1);
+        }
+        Region.push_back(r);
+        Species.push_back((int) (NSPECIES * (1-ranf())));
+      }
 		
+      // skip unwanted columns
+      for(int skip = 0; skip<SKIPCOL; skip++){
 	beg = line.find_first_not_of(delimit, end);
 	end = line.find_first_of(delimit, beg);
-	sv = line.substr(beg, end-beg);
-	int r = atoi(sv.data());	
-        if(!useregion)
-			r= -1;
-		
-		r = GetLocationNumberAdd(RegionsPresent, r);
-     
-    	if(r <(-1)) { 
-			cerr << "Error in numbering of locations in genotype file" << endl;
-			cerr << "Individal ID = " << Id[Id.size()-1] << endl;
-			exit(1);
-     	}
-    
-        if(chrom==1) {
-          if(r>=0) {
-            if(r != Region.back()) {
-              string msg = "Two haplotypes of the same individual in different regions";
-              error_and_exit(msg);
-            }
-          }
-        }
-     	if(chrom==0){
-			if(r>=0)
-	  			Region.push_back(r);
-			else{
-	  			if(NSPECIES > 1){
-	    			cerr << "Error: mustn't have individuals of unknown location with more than 1 species" << endl;
-	    		exit(1);
-	  			} else {
-	    			Region.push_back(r);
-	  			}		
-			}
-	
-			Species.push_back((int) (NSPECIES * (1-ranf())));
-		}
-		
-		int dummy;
-    	for(int skip = 0; skip<SKIPCOL; skip++){
-			beg = line.find_first_not_of(delimit, end);
-			end = line.find_first_of(delimit, beg);
-	  	}
+      }
 
-	int individual = Genotype.size()-1;
-      	for(int j=0; j<NLOCI; j++){
-      		int allele;
-		beg = line.find_first_not_of(delimit, end);
-  		end = line.find_first_of(delimit, beg);
-  		string sv(line, beg, end-beg);
-  		allele = atoi(sv.data());  			  
-	 
-  		Genotype[individual][chrom][j] = allele;
-  		if((allele<0) && (chrom ==0))
-     		NMissing[individual]++;
-	  	}
-        // Check that all NLOCI alleles have been found; if we detect
-        // 'badallele' they have not.
-        for(int j=0; j<NLOCI; ++j) {
-          if (Genotype[individual][chrom][j] == badallele) {
-             string msg = "Too few markers found for individual " + to_string(individual);
-             error_and_exit(msg);
-          }
+      // read genotype data
+      int individual = Genotype.size()-1;
+      for(int j=0; j<NLOCI; j++){
+        int allele;
+	beg = line.find_first_not_of(delimit, end);
+  	end = line.find_first_of(delimit, beg);
+  	string sv(line, beg, end-beg);
+        if(sv == "") {
+          string msg = "Too few markers found for individual " + to_string(individual);
+          error_and_exit(msg);
         }
-        line.assign(getline(pbuf));
-	}
+  	allele = atoi(sv.data());  			  
+	 
+  	Genotype[individual][chrom][j] = allele;
+  	if((allele<0) && (chrom ==0))
+     	NMissing[individual]++;
+      }
+    // read another line
+    line.assign(getline(pbuf));
+    }
   }
 }
 
@@ -461,7 +485,7 @@ void output_positions_data(const vector<string> & RegionName, const vector<int> 
 
         cout << "ID : RegionName, LatitudeRadians, LongitudeRadians" << endl;
 
-	for(int i=0; i<Region.size(); i++){
+	for(unsigned long i=0; i<Region.size(); i++){
 		if(Region[i]>=0)
 		cout << Id[i] << " : " << RegionName[Region[i]] << "," << x[Region[i]] << "," << y[Region[i]] << endl;
 		else
@@ -486,12 +510,12 @@ void input_positions_data( ifstream & input, vector<double> & x, vector<double> 
   // We suppressed printing from this routine as what was printed was extremely confusing!
   // Mary Kuhner 2021/07/26.
 
-  int region,s;
+  int region;
   string regionname;
   int subregion=0;
   double tempx,tempy;
   cout << "Inputting location information" << endl;
-  int r=0;
+  unsigned long r=0;
   while(r< RegionsPresent.size()){
     input >> regionname;    
     input >> region;
@@ -507,7 +531,7 @@ void input_positions_data( ifstream & input, vector<double> & x, vector<double> 
     if(USESUBREGION == 1)
       input >> subregion;
 
-    if(region < RegionsPresent.size()){
+    if(region < (int)RegionsPresent.size()){
        RegionName[Perm[region]] = regionname;
        SubRegion[Perm[region]] = subregion;
        input >> tempy;
@@ -521,6 +545,7 @@ void input_positions_data( ifstream & input, vector<double> & x, vector<double> 
       input >> tempy;
       input >> tempx;
     }
+    cout << region << " "  << regionname << " " << x[Perm[region]] << " " << y[Perm[region]] << endl;
   } 
 }
 
@@ -562,7 +587,7 @@ void recode_genotypes(vector<vector<vector<int> > > & OriginalGenotype, vector<v
 		exit(1);
 	}
 
-    for(int allele =0; allele<AllelesPresent.size(); allele++){
+    for(unsigned long allele =0; allele<AllelesPresent.size(); allele++){
       for(int ind =0; ind<NIND; ind++){
 	for(int chrom=0; chrom<2; chrom++){
 	  if(OriginalGenotype[ind][chrom][locus]==AllelesPresent[allele]){
@@ -753,7 +778,7 @@ void output_counts(const IntVec4d& Count, vector<int> & Perm)
   }
 }
 
-double FittedCovariance(vector<double> & Alpha, double d){
+double FittedCovariance(const vector<double> & Alpha, double d){
   
   if(d>0){
     if(USESPATIAL)
@@ -893,7 +918,7 @@ double Distance(int r, int s, vector<double> & Xcoord, vector<double> & Ycoord){
 
 
 // compute the matrix L (uses the Lapack routine dpotrf)
-void calc_L(double * L,vector<double> & Alpha, vector<double> & Xcoord, vector<double> & Ycoord)
+void calc_L(double * L,const vector<double> & Alpha, vector<double> & Xcoord, vector<double> & Ycoord)
 {
   for(int r=0; r<NREGION; r++){
     for(int s=0; s <NREGION; s++){
@@ -932,7 +957,6 @@ double CurrentLogLik(const DoubleVec3d& LogLik, int r){
 // LogLik[r][k][l] holds the loglikelihood for individuals in region r, 
 // species k, at locus l
 void calc_LogLik(DoubleVec3d& LogLik, const DoubleVec4d& Theta, const DoubleVec3d& SumExpTheta, const IntVec4d& Count, const IntVec3d& SumCount){
-  double loglik = 0;
   for(int r=0; r<NREGION; r++){
     for(int k=0; k<NSPECIES; k++){
       for(int l=0; l<NLOCI; l++){
@@ -1168,7 +1192,7 @@ void NormaliseSubRegionProb(DoubleVec3d& SubRegionProb){
 // some output routines
 void OutputPi(vector<vector<double> > & Pi,vector<string> & RegionName,ostream & ostr, vector<int> & Perm){
   for(int k = 0; k< NSPECIES; k++){
-    for(int r = 0; r<Pi.size(); r++){
+    for(unsigned long r = 0; r<Pi.size(); r++){
       //ostr.setf(ios::fixed);
       ostr.setf(ios::showpoint);
       ostr.precision(2); 
@@ -1259,13 +1283,13 @@ void OutputLogMeanProb2(const DoubleVec4d& MeanFreq, vector<vector<vector<int> >
 
 void OutputParameters(ofstream & paramfile, vector<double> & Alpha, double & Beta, vector<double> & Gamma, vector<double> & Delta, double & Eta, const DoubleVec1d& Lambda, const DoubleVec3d& LogLik)
 {
-  for(int a = 0; a < Alpha.size(); a++)
+  for(unsigned long a = 0; a < Alpha.size(); a++)
     paramfile << Alpha[a] << " ";
   paramfile <<  Beta <<  " ";
   if(NSPECIES > 1){
     for(int k = 0; k< NSPECIES; k++)
       paramfile << Gamma[k] << " ";
-    for(int a = 0; a < Delta.size(); a++)
+    for(unsigned long a = 0; a < Delta.size(); a++)
       paramfile << Delta[a] << " ";
     paramfile <<  Eta <<  " ";
 	for(int k = 0; k< NSPECIES; k++)
@@ -1276,6 +1300,7 @@ void OutputParameters(ofstream & paramfile, vector<double> & Alpha, double & Bet
            
 }     
 
+#if 0
 void OutputTheta(double **** Theta, ostream & output, int ** Coding,vector<int> & Perm)
 {
   for(int l=0;l<NLOCI; l++){
@@ -1289,6 +1314,7 @@ void OutputTheta(double **** Theta, ostream & output, int ** Coding,vector<int> 
   }
 
 }
+#endif
 
 
 // ------------------------- The MCMC update routines ---------------------
@@ -1484,7 +1510,6 @@ void update_Lambda(DoubleVec1d& Lambda, double Eta, DoubleVec2d& Psi, DoubleVec2
 
 void update_Alpha0(vector<double> & Alpha, const DoubleVec4d& X)
 {
-  double sum = 0;
   double sumsq = 0;
   int total =0;
 
@@ -1521,7 +1546,6 @@ void update_Delta0(vector<double> & Delta, const DoubleVec2d& Y)
 void update_Beta(double & Beta, const DoubleVec2d& Mu)
 {
   double sumsq = 0;
-   double sum = 0;
   int total =0;
   for(int l=0;l<NLOCI; l++){
     for(int allele=0; allele<Nallele[l]; allele++){

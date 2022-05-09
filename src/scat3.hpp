@@ -1,4 +1,3 @@
-#ifndef SCAT2_HPP
 #define SCAT2_HPP
 
 // SCAT version 3.0.2
@@ -29,6 +28,7 @@ const double PI = 3.141592;
 const string VERSION="3.0.2";
     
 const int MAXSPECIES = 2;
+// This line is 120 for microsats and 2 for SNPs
 const int MAXNALLELE = 120; 
 const int MARGIN = 7;  // margin around grid
 
@@ -161,13 +161,13 @@ void error_and_exit(const string& msg);
 bool CheckThetaValues(const DoubleVec4d& Theta, const DoubleVec4d& ExpTheta,
   const DoubleVec3d& SumExpTheta);
 
-bool CheckPsiValues(const DoubleVec2d& Psi, double ** ExpPsi, double * SumExpPsi);
+bool CheckPsiValues(const DoubleVec2d& Psi, const DoubleVec2d& ExpPsi, const DoubleVec1d& SumExpPsi);
 
 bool CheckCountValues(const IntVec4d& Count, const IntVec3d& SumCount);
 
 bool CheckConsistency(const DoubleVec4d& Theta, const DoubleVec4d& ExpTheta,
   const DoubleVec3d& SumExpTheta, const IntVec4d& Count, const IntVec3d& SumCount,
-  const DoubleVec2d& Psi, double ** ExpPsi, double * SumExpPsi);
+  const DoubleVec2d& Psi, const DoubleVec2d& ExpPsi, const DoubleVec1d& SumExpPsi);
 
 bool CompareLogLiks(const DoubleVec3d& newLL, const DoubleVec3d& oldLL);
 
@@ -226,7 +226,7 @@ void calc_ExpTheta_and_SumExpTheta(DoubleVec4d& Theta, DoubleVec4d& ExpTheta, Do
 
 void output_counts(const IntVec4d& Count, vector<int> & Perm);
 
-double FittedCovariance(vector<double> & Alpha, double d);
+double FittedCovariance(const vector<double> & Alpha, double d);
   
 double Covariance(int r0, int k0, int r1, int k1, const DoubleVec4d& Theta, const DoubleVec2d& Mu, const DoubleVec3d& Nu);
 
@@ -242,7 +242,7 @@ double Distance(double x1, double y1, double x2, double y2);
 
 double Distance(int r, int s, vector<double> & Xcoord, vector<double> & Ycoord);
 
-void calc_L(double * L,vector<double> & Alpha, vector<double> & Xcoord, vector<double> & Ycoord);
+void calc_L(double * L,const vector<double> & Alpha, vector<double> & Xcoord, vector<double> & Ycoord);
 
 double CurrentLogLik(const DoubleVec3d& LogLik, int r);
 
@@ -292,7 +292,7 @@ void OutputParameters(ofstream & paramfile, vector<double> & Alpha, double & Bet
 // assigned to
 void update_Species(vector<int> & Species, vector< vector<double> > & Pi, vector<int> & Region, vector<vector<vector<int> > > & Genotype, const DoubleVec4d& ExpTheta, const DoubleVec3d& SumExpTheta);
 
-void compute_Pi(vector< vector<double> > & Pi, double ** ExpPsi, double * SumExpPsi );
+void compute_Pi(DoubleVec2d& Pi, const DoubleVec2d& ExpPsi, const DoubleVec1d& SumExpPsi);
 
 void update_Pi(vector< vector<double> > & Pi, vector<int> & Species, vector<int> & Region);
 
@@ -300,7 +300,7 @@ void update_Nu(DoubleVec3d& Nu, vector<double> & Gamma, DoubleVec4d& Theta, Doub
 
 void update_Mu(DoubleVec2d& Mu, double Beta, DoubleVec4d& Theta, DoubleVec4d& ExpTheta, DoubleVec3d& LogLik, DoubleVec3d& SumExpTheta, const IntVec4d& Count, const IntVec3d& SumCount);
 
-void update_Lambda(DoubleVec1d& Lambda, double Eta, DoubleVec2d& Psi, double ** ExpPsi, double * SumExpPsi, vector<int> & Region, vector<int> & Species);
+void update_Lambda(DoubleVec1d& Lambda, double Eta, DoubleVec2d& Psi, DoubleVec2d& ExpPsi, DoubleVec1d& SumExpPsi, vector<int> & Region, vector<int> & Species);
 
 void update_Alpha0(vector<double> & Alpha, const DoubleVec4d& X);
 
@@ -317,10 +317,10 @@ bool InForest(double x,double y);
 void update_Location(vector<double> & Alpha, const DoubleVec4d& X, const DoubleVec2d& Mu, const DoubleVec3d& Nu, DoubleVec4d& Theta, DoubleVec4d& ExpTheta, DoubleVec3d& SumExpTheta, DoubleVec3d& LogLik, double * L, const IntVec4d& Count, const IntVec3d& SumCount, vector<double> & Xcoord, vector<double> & Ycoord, vector<int> & Species, vector<vector<vector<int> > > & Genotype, vector<int> & Region, vector<double> & BoundaryX, vector<double> & BoundaryY, const Mapgrid& mymapgrid);
 
 // update the parameters in the covariance matrix
-void update_Alpha(vector<double> & Alpha, const DoubleVec4d& X, const DoubleVec2d& Mu, const DoubleVec3d& Nu, DoubleVec4d& Theta, DoubleVec4d& ExpTheta, DoubleVec3d& LogLik, DoubleVec3d& SumExpTheta, const IntVec4d& Count, const IntVec4d& SumCount, double * L, vector<double> & Xcoord, vector<double> & Ycoord);
+void update_Alpha(vector<double> & Alpha, const DoubleVec4d& X, const DoubleVec2d& Mu, const DoubleVec3d& Nu, DoubleVec4d& Theta, DoubleVec4d& ExpTheta, DoubleVec3d& LogLik, DoubleVec3d& SumExpTheta, const IntVec4d& Count, const IntVec3d& SumCount, double * L, vector<double> & Xcoord, vector<double> & Ycoord);
 
 // update the parameters in the covariance matrix M 
-void update_Delta(vector<double> & Delta, double ** Y, const DoubleVec1d& Lambda, DoubleVec2d& Psi, double ** ExpPsi, double * SumExpPsi, vector<int> & Species, vector<int> & Region, double * M, vector<double> & Xcoord, vector<double> & Ycoord);
+void update_Delta(vector<double> & Delta, const DoubleVec2d& Y, const DoubleVec1d& Lambda, DoubleVec2d& Psi, DoubleVec2d& ExpPsi, DoubleVec1d& SumExpPsi, vector<int> & Species, vector<int> & Region, double * M, vector<double> & Xcoord, vector<double> & Ycoord);
 
 double divLogLikValue(int r, int k, int l, int j, const DoubleVec4d& ExpTheta, const DoubleVec3d& SumExpTheta, const IntVec4d& Count, const IntVec3d& SumCount, double * L);
 
@@ -330,11 +330,11 @@ void update_XJoint(vector<double> & Alpha, DoubleVec4d& X, const DoubleVec2d& Mu
 
 void update_XSingle(vector<double> & Alpha, DoubleVec4d& X, DoubleVec4d& Theta, DoubleVec4d& ExpTheta, DoubleVec3d& LogLik, DoubleVec3d& SumExpTheta, const IntVec4d& Count, const IntVec3d& SumCount, double * L);
 
-void update_YSingle(vector<double> & Delta, DoubleVec2d& Y, DoubleVec2d& Psi, double ** ExpPsi, double * SumExpPsi, vector<int> & Region, vector<int> & Species, double * M);
+void update_YSingle(vector<double> & Delta, DoubleVec2d& Y, DoubleVec2d& Psi, DoubleVec2d& ExpPsi, DoubleVec1d& SumExpPsi, vector<int> & Region, vector<int> & Species, double * M);
 
 void DoAllUpdates(DoubleVec4d& X, double & Beta,  DoubleVec1d& Gamma, DoubleVec1d& Alpha, DoubleVec2d& Mu, DoubleVec3d& Nu, DoubleVec4d& Theta, DoubleVec4d& ExpTheta, DoubleVec3d& LogLik, DoubleVec3d& SumExpTheta, IntVec4d& Count, IntVec3d& SumCount, double * L, vector<vector<vector<int> > > & Genotype, vector<int> & Region, vector<int> & Species, vector<vector<double> > & Pi, vector<double> & Xcoord, vector<double> & Ycoord, DoubleVec2d& Y, double & Eta, vector<double> & Delta, DoubleVec1d& Lambda, DoubleVec2d& Psi, DoubleVec2d& ExpPsi, DoubleVec1d& SumExpPsi, double * M, vector<double> & BoundaryX, vector<double> & BoundaryY, const Mapgrid& mymapgrid );
 
-void InitialiseTheta(DoubleVec4d& Theta, const DoubleVec4d& X, const DoubleVec2d* Mu, const DoubleVec3d& Nu, double * L);
+void InitialiseTheta(DoubleVec4d& Theta, const DoubleVec4d& X, const DoubleVec2d& Mu, const DoubleVec3d& Nu, double * L);
 
 void Initialise(DoubleVec4d& X, double & Beta,  vector<double> & Gamma, vector<double> & Alpha, DoubleVec2d& Mu, DoubleVec3d& Nu, DoubleVec4d& Theta, double * L, vector<double> & Xcoord, vector<double> & Ycoord);
 
@@ -346,4 +346,3 @@ void OutputEstimatedFreqs(const DoubleVec4d& ExpTheta, const DoubleVec3d& SumExp
 
 int main ( int argc, char** argv);
 
-#endif
