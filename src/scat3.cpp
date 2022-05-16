@@ -3050,6 +3050,38 @@ int main ( int argc, char** argv)
     output_positions_data(RegionName, Region, Xcoord, Ycoord, Id);
   }
 
+  // check that all reference regions lie within our species range
+  // jyamato may 16, 2022
+  for(vector<int>::size_type r=0; r<RegionsPresent.size(); ++r) {
+    double radlat = Ycoord[Perm[r]];
+    double radlong = Xcoord[Perm[r]];
+    if(!InRange(radlong,radlat,BoundaryX,BoundaryY,mymapgrid)) {
+      string usedmap("NULL");
+      if (READGRID) {
+        usedmap = filenames["gridfile"];
+      } else {
+        if (READBOUNDARY) {
+          usedmap = filenames["boundaryfile"];
+        } else {
+          usedmap = "default map information for ";
+          if (SAVANNAHONLY) {
+            usedmap += "Savannah elephants";
+          }
+          if (FORESTONLY) {
+            usedmap += "Forest elephants";
+          }
+        }
+      }
+      
+      double deglat = to_degrees(radlat);
+      double deglong = to_degrees(radlong);
+      string msg = RegionName[Perm[r]] + " at [" + str(deglat) + "," + str(deglong) + "]";
+      msg += " is outside the species boundaries established";
+      msg += " by " + usedmap + "\n";
+      error_and_exit(msg);
+    }
+  }
+
   //declare memory for L, the matrix in the Cholesky decomp of Sigma
   // these are arrays for use in a C interface
   double * L = new double [NREGION * NREGION];
