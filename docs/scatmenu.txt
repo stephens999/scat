@@ -1,0 +1,103 @@
+
++a : float(ALPHAUPDATESD)
+
++A : integer(FIRSTSAMPLETOLOCATE)
+    integer(LASTSAMPLETOLOCATE)
+    LOCATE(1); 
+
+don't update beta
++b : UPDATEBETA(0)  add to documentation -- DONE
+
+read in boundary file
++B : char*(filenames["boundaryfile"])
+    READBOUNDARY(1)
+
+cross-validate
++c : integer(STARTCROSSVAL)  check in code
+    CROSSVAL(1)
+this is lava flow:  remove -- DONE
+
++C : integer(SKIPCOL)  
+
++d : SAVANNAHONLY(1)
+
++D : FORESTONLY(1)
+
++e : float(DELTA)
+    float(NULLPROB)
+
++ E : ECHOINPUTS(1) add to documentation
+
+fix alpha and beta, to values given in subsequent arguments
++f : UPDATEALPHA(0)
+    UPDATEBETA(0)
+    float(ALPHA0)
+    float(ALPHA1)
+    float(ALPHA2)
+    float(BETA)
+
++F : OUTPUTSAMPLEFREQ(1)  check in code -- lava flow, remove! -- DONE
+
+read in grid file, replacement for a boundary file
++g : char*(filenames["gridfile"]
+    READGRID(1)
+
+set proposal variance for X update
++h : float(XPROPOSALFACTOR)
+
++H : integer(HYBRIDCHECK)
+
++i : float(ALPHA0)  add to documentation -- DONE
+    float(ALPHA1)
+    float(ALPHA2)
+    float(BETA)
+
+don't permute the regions - use input order
++I : PERMUTE(0)   check in code -- DONE
+
+update x jointly
++j : UPDATEJOINT(1)
+
+fix mu to be 0 (mimic "indep frequencies" model)
++m : UPDATEMU(0)  lookup meaning of variables
+    UPDATEBETA(0)
+
++M : ASSIGNFILE(1)
+    char*(filenames["assignfile"])
+
+n : UPDATENU(0)  lookup meaning of variables
+
++N : INCLUDENGGET(1)
+
+p : integer(PSEUDOCOUNT)  check in code
+
+not random walk
++r : USELANGEVIN(1)
+
+remove all samples from a region when doing location
++R : REMOVEREGION(1)
+
+seed
++S : integer(SEED)
+
+number regions from 0
+T : integer(NUMBERREGIONSFROM)  check in code
+
+v : VERBOSE(1)   add to documentation
+    OUTPUTX(1)
+    char*(filenames["Xfile"])
+
+don't use spatial smoothing
++w: USESPATIAL(0)
+
+locate whole region
+W : LOCATEWHOLEREGION(1)  add to documentation
+
+nonuninformprior
+x : NONUNIFORMPRIOR(1)  check in code
+
+start location close to true location
++X : CHEAT(1)
+
+include subregion["sector"] info in location file
++Z : USESUBREGION(1)

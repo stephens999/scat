@@ -1,3 +1,4 @@
+#ifndef SCAT2_HPP
 #define SCAT2_HPP
 
 // SCAT version 3.0.2
@@ -43,118 +44,11 @@ typedef std::vector<IntVec3d> IntVec4d;
 
 class Mapgrid;
 
-int ECHOINPUTS = 0;
-
 const int ValidateAssumptions = 1;
 
-int USESUBREGION = 0; // indicates whether region file also holds subregion data
-int NSUBREGION = 8;
-
-int PSEUDOCOUNT = 0;
-int LOCATE = 0; // whether to try to estimate the position of a particular sample
-int ASSIGNFILE = 0;
-int SAMPLETOLOCATE = 0;
-int FIRSTSAMPLETOLOCATE=0;
-int LASTSAMPLETOLOCATE=-1;
-int LOCATEWHOLEREGION = 0;
-int INCLUDENUGGET = 0;
-int SKIPCOL = 0;
-
-int READBOUNDARY = 0;
-int READGRID = 0;
-
-int PERMUTE = 1;
-int VERBOSE = 0;
-
-double TEMPERATURE = 1; //0.0001;
-double ALPHAUPDATESD = 0.4;
-
-double DELTA = 0.05; //0.05; //0.1; // prob of genotyping error in this one sample (set to 0 for no error)
-double NULLPROB = 0; // 0.1;// prob of null allele
-    
-int TRUEREGION; // stores true region of the sample to be located
-int CHEAT = 0; // stores whether to cheat by starting estimates at the true location
-int NONUNIFORMPRIOR = 0; // non-uniform prior weights sample as being more 
-// likely to be near one of the sampling locations
-int REMOVEREGION = 0;
-
-int USELANGEVIN = 0;
-int USESPATIAL =1; 
-int HYBRIDCHECK = 0;
-
-int UPDATEALPHA =1;
-int INITALPHA = 0;
-int UPDATEMU = 1;
-int UPDATENU = 1;
-int UPDATEBETA = 1;
-int UPDATEX = 1;
-
-int FORESTONLY = 0;
-int SAVANNAHONLY = 0;
-
-int OUTPUTX = 0;
-int UPDATEJOINT = 0;
-
-double XPROPOSALFACTOR = 0.5; // factor by which to multiply sd
-double YPROPOSALFACTOR = 0.5;
-
-int NIND;
-int NREGION;
-int NSPECIES = 1;
-
-int NLOCI = 16;
 const double EPSILON = 1e-100;
 
-string::size_type MAXOUTCHARS_INNAME = 20;
-double SCREENPROGRESS_INTERVAL = 0.2;  // percentage of progress for a "." on screen
-
-double NBETA = 0.001; // parameters on gamma prior on beta 
-double LBETA = 0.001; // (beta is prior precision of mu)
-
-double NETA = 0.001; // params of gamma prior on eta,
-double LETA = 0.001; // (eta is prior precision of lambda) 
-
-double ALPHA0 =1; // values at which to initialise Alpha
-double ALPHA1 = 1;
-double ALPHA2 = 1;
-double BETA = 1;
-
-const int ALPHALENGTH = 3+INCLUDENUGGET;
-vector<double> NA(ALPHALENGTH-1,0.001); // gamma prior on Alpha[0] and Alpha[1]
-vector<double> LA(ALPHALENGTH-1,0.001); // (Gamma(NA,LA)) 
-vector<double> ALPHAMAX(ALPHALENGTH,0);
-vector<double> ALPHAMIN(ALPHALENGTH,0);
-vector<int> ALPHAATTEMPT(ALPHALENGTH,0);
-vector<int> ALPHAACCEPT(ALPHALENGTH,0);
-
 const int DELTALENGTH = 3;
-vector<double> ND(DELTALENGTH-1,0.001); // gamma prior on Delta[0] and Delta[1]
-vector<double> LD(DELTALENGTH-1,0.001); // (Delta(ND,LD)) 
-vector<double> DELTAMAX(DELTALENGTH,0);
-vector<double> DELTAMIN(DELTALENGTH,0);
-vector<int> DELTAATTEMPT(DELTALENGTH,0);
-vector<int> DELTAACCEPT(DELTALENGTH,0);
-
-
-int XACCEPT =0;
-int XATTEMPT = 0;
-
-int MUACCEPT = 0;
-int MUATTEMPT =0;
-
-int NUACCEPT = 0;
-int NUATTEMPT =0;
-
-int YACCEPT =0;
-int YATTEMPT = 0;
-
-int LAMBDAACCEPT = 0;
-int LAMBDAATTEMPT =0;
-
-int LOCATTEMPT = 0;
-int LOCACCEPT = 0;
-
-vector<int> Nallele;
 
 void error_and_exit(const string& msg);
 
@@ -345,4 +239,4 @@ void OutputMeanFreq(ofstream & freqfile, vector<string> & RegionName, vector<int
 void OutputEstimatedFreqs(const DoubleVec4d& ExpTheta, const DoubleVec3d& SumExpTheta, ostream& output, const IntVec2d& Coding, vector<int>& Perm);
 
 int main ( int argc, char** argv);
-
+#endif  // SCAT2_HPP

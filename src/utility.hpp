@@ -22,5 +22,5 @@ void rperm(vector<int> & perm,int n);
 double rnorm(double,double);
 double dnorm(double);
 
-#endif
+#endif  // UTILITY_HPP
 

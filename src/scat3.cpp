@@ -17,6 +17,8 @@
 #include <cmath>
 #include "string.h"
 #include "readboundary.hpp"
+//#include "mt19937ar.hpp"
+#include <random>
 
 extern "C" void dpotrf_(
 	const char &uplo,		// (input)
@@ -28,11 +30,122 @@ extern "C" void dpotrf_(
 
 using namespace std; 
     
+// random number stuff
+std::random_device rd;
+std::default_random_engine eng(rd());
+std::uniform_real_distribution<> distr(0.0,1.0);
+
+// Declarations moved here from scat3.hpp by Mary 5/10/22
+
+int ECHOINPUTS = 0;
+int USESUBREGION = 0; // indicates whether region file also holds subregion data
+int NSUBREGION = 8;
+
+int PSEUDOCOUNT = 0;
+int LOCATE = 0; // whether to try to estimate the position of a particular sample
+int ASSIGNFILE = 0;
+int SAMPLETOLOCATE = 0;
+int FIRSTSAMPLETOLOCATE=0;
+int LASTSAMPLETOLOCATE=-1;
+int LOCATEWHOLEREGION = 0;
+int INCLUDENUGGET = 0;
+int SKIPCOL = 0;
+
+int READBOUNDARY = 0;
+int READGRID = 0;
+
+int PERMUTE = 1;
+int VERBOSE = 0;
+
+double TEMPERATURE = 1; //0.0001;
+double ALPHAUPDATESD = 0.4;
+int ALPHALENGTH = 3+INCLUDENUGGET;
+
+double DELTA = 0.05; //0.05; //0.1; // prob of genotyping error in this one sample (set to 0 for no error)
+double NULLPROB = 0; // 0.1;// prob of null allele
+int TRUEREGION; // stores true region of the sample to be located
+int CHEAT = 0; // stores whether to cheat by starting estimates at the true location
+int NONUNIFORMPRIOR = 0; // non-uniform prior weights sample as being more
+// likely to be near one of the sampling locations
+int REMOVEREGION = 0;
+
+int USELANGEVIN = 0;
+int USESPATIAL =1;
+int HYBRIDCHECK = 0;
+
+int UPDATEALPHA =1;
+int INITALPHA = 0;
+int UPDATEMU = 1;
+int UPDATENU = 1;
+int UPDATEBETA = 1;
+int UPDATEX = 1;
+
+int FORESTONLY = 0;
+int SAVANNAHONLY = 0;
+
+int OUTPUTX = 0;
+int UPDATEJOINT = 0;
+
+double XPROPOSALFACTOR = 0.5; // factor by which to multiply sd
+double YPROPOSALFACTOR = 0.5;
+
+int NIND;
+int NREGION;
+int NSPECIES = 1;
+
+int NLOCI;
+string::size_type MAXOUTCHARS_INNAME = 20;
+double SCREENPROGRESS_INTERVAL = 0.2;  // percentage of progress for a "." on screen
+
+double NBETA = 0.001; // parameters on gamma prior on beta
+double LBETA = 0.001; // (beta is prior precision of mu)
+
+double NETA = 0.001; // params of gamma prior on eta,
+double LETA = 0.001; // (eta is prior precision of lambda)
+
+double ALPHA0 =1; // values at which to initialise Alpha
+double ALPHA1 = 1;
+double ALPHA2 = 1;
+double BETA = 1;
+vector<double> NA(ALPHALENGTH-1,0.001); // gamma prior on Alpha[0] and Alpha[1]
+vector<double> LA(ALPHALENGTH-1,0.001); // (Gamma(NA,LA))
+vector<double> ALPHAMAX(ALPHALENGTH,0);
+vector<double> ALPHAMIN(ALPHALENGTH,0);
+vector<int> ALPHAATTEMPT(ALPHALENGTH,0);
+vector<int> ALPHAACCEPT(ALPHALENGTH,0);
+vector<double> ND(DELTALENGTH-1,0.001); // gamma prior on Delta[0] and Delta[1]
+vector<double> LD(DELTALENGTH-1,0.001); // (Delta(ND,LD))
+vector<double> DELTAMAX(DELTALENGTH,0);
+vector<double> DELTAMIN(DELTALENGTH,0);
+vector<int> DELTAATTEMPT(DELTALENGTH,0);
+vector<int> DELTAACCEPT(DELTALENGTH,0);
+int XACCEPT =0;
+int XATTEMPT = 0;
+
+int MUACCEPT = 0;
+int MUATTEMPT =0;
+
+int NUACCEPT = 0;
+int NUATTEMPT =0;
+
+int YACCEPT =0;
+int YATTEMPT = 0;
+
+int LAMBDAACCEPT = 0;
+int LAMBDAATTEMPT =0;
+
+int LOCATTEMPT = 0;
+int LOCACCEPT = 0;
+
+vector<int> Nallele;
+
+// end of moved declarations
+
 string tracefilename("tracefile.txt");
 ofstream TRACEFILE(tracefilename.c_str());
 
 void error_and_exit(const string& msg) {
-  cerr << msg << endl;
+  std::cerr << msg << std::endl;
   exit(-1);
 }
 
@@ -236,21 +349,21 @@ void InitialiseXY(vector<double> & BoundaryX, vector<double> & BoundaryY, vector
         cerr << "SCAT InitialiseXY(), tried 100 times and fails" << endl;
         exit(-1);
       }
-      double lambda = ranf();
-      float randpick = ranf();
+      double lambda = distr(eng);
+      double randpick = distr(eng);
       if (randpick == 1.0) {
-        cerr << "ranf() returned 1.0; need to guard against this" << endl;
+        cerr << "distr(eng) returned 1.0; need to guard against this" << endl;
         exit(-1);
       }
-      int r = (int) (ranf() * (NREGION-1));
+      int r = (int) (distr(eng) * (NREGION-1));
       Xcoord[NREGION-1] = lambda * Xcenter + (1-lambda) * Xcoord[r];
       Ycoord[NREGION-1] = lambda * Ycenter + (1-lambda) * Ycoord[r];
       ntries++;
     } while(InRange(Xcoord[NREGION-1],Ycoord[NREGION-1],BoundaryX,BoundaryY,mymapgrid)==0);
 #endif
-    float randpick = ranf();
+    float randpick = distr(eng);
     if (randpick == 1.0) {
-      cerr << "ranf() returned 1.0; need to guard against this" << endl;
+      cerr << "distr(eng) returned 1.0; need to guard against this" << endl;
       exit(-1);
     }
     int randomreg = (int) (randpick * (NREGION - 1));
@@ -411,7 +524,7 @@ void input_genotype_data( ifstream & input, vector<int>  & Region,
 	  exit(1);
         }
         Region.push_back(r);
-        Species.push_back((int) (NSPECIES * (1-ranf())));
+        Species.push_back((int) (NSPECIES * (1-distr(eng))));
       }
 		
       // skip unwanted columns
@@ -1404,7 +1517,7 @@ void update_Nu(DoubleVec3d& Nu, vector<double> & Gamma, DoubleVec4d& Theta, Doub
 	
 	double A = exp(LogLikRatio); // acceptance prob
 	NUATTEMPT +=1;
-	if( ranf()<A ){ //accept move 
+	if(distr(eng)<A ){ //accept move 
 	  NUACCEPT +=1;
 	  for(int r=0; r<NREGION; r++){
 	    Theta[r][k][l][j] = NewTheta[r][k];
@@ -1450,7 +1563,7 @@ void update_Mu(DoubleVec2d& Mu, double Beta, DoubleVec4d& Theta, DoubleVec4d& Ex
       double A = exp(LogLikRatio); // acceptance prob
 
       MUATTEMPT +=1;
-      if( ranf()<A ){ //accept move 
+      if(distr(eng)<A ){ //accept move 
 	MUACCEPT +=1;
 	for(int r=0; r<NREGION; r++){
 	  for(int k=0; k<NSPECIES; k++){
@@ -1496,7 +1609,7 @@ void update_Lambda(DoubleVec1d& Lambda, double Eta, DoubleVec2d& Psi, DoubleVec2
     double A = exp(LogLikRatio); // acceptance prob
         
     LAMBDAATTEMPT +=1;
-    if( ranf()<A ){ //accept move 
+    if(distr(eng)<A ){ //accept move 
       LAMBDAACCEPT +=1;
       for(int r=0; r<NREGION; r++){
 	Psi[r][k] = NewPsi[r];
@@ -1728,7 +1841,7 @@ void update_Location(vector<double> & Alpha, const DoubleVec4d& X, const DoubleV
     double h; // proposal sd
     double LogLikRatio = 0;
     
-    if(ranf()<0.9){ // propose small move from current position
+    if(distr(eng)<0.9){ // propose small move from current position
       h=0.02; //0.07;
       NewXcoord[NREGION-1] += rnorm(0,h);
       NewYcoord[NREGION-1] += rnorm(0,h);
@@ -1741,7 +1854,7 @@ void update_Location(vector<double> & Alpha, const DoubleVec4d& X, const DoubleV
       LogLikRatio = 0; // Hastings ratio
     } else { // propose jump to new randomly-chosen location
       h=0.04; //0.02; //sd of proposal
-      int newregion = (int) (ranf() * (NREGION - 1));
+      int newregion = (int) (distr(eng) * (NREGION - 1));
       NewXcoord[NREGION-1] = Xcoord[newregion] + rnorm(0,h);
       NewYcoord[NREGION-1] = Ycoord[newregion] + rnorm(0,h);
       // do not bother with further details if proposed location is out of range
@@ -1833,7 +1946,7 @@ void update_Location(vector<double> & Alpha, const DoubleVec4d& X, const DoubleV
     double A = exp(LogLikRatio); // acceptance prob
     
     // test
-    if( ranf()<A ){ //accept move
+    if(distr(eng)<A ){ //accept move
       // DEBUG
       TRACEFILE << to_degrees(NewXcoord[NREGION-1]) << " " << to_degrees(NewYcoord[NREGION-1]) << " Accept" << endl;
       LOCACCEPT +=1;
@@ -1954,7 +2067,7 @@ static int RecursionCheck = 0;
     
     double A = exp(LogLikRatio); // acceptance prob
     
-    if( ranf()<A ){ //accept move 
+    if(distr(eng)<A ){ //accept move 
       ALPHAACCEPT[alphaparam] +=1;
       Alpha[alphaparam] = NewAlpha[alphaparam];
       for(int r=0; r<NREGION; r++){
@@ -2042,7 +2155,7 @@ void update_Delta(vector<double> & Delta, const DoubleVec2d& Y, const DoubleVec1
 
     double A = exp(LogLikRatio); // acceptance prob
     
-    if( ranf()<A ){ //accept move 
+    if(distr(eng)<A ){ //accept move 
       DELTAACCEPT[deltaparam] +=1;
       Delta[deltaparam] = NewDelta[deltaparam];
       for(int r=0; r<NREGION; r++){
@@ -2140,7 +2253,7 @@ void update_XJoint(vector<double> & Alpha, DoubleVec4d& X, const DoubleVec2d& Mu
 	double A = exp(LogLikRatio); // acceptance prob
 	XATTEMPT +=1;
 	
-	if( ranf()<A ){ //accept move 
+	if(distr(eng)<A ){ //accept move 
 	  XACCEPT +=1;
 	  for(int r=0; r<NREGION; r++){
 	    Theta[r][k][l][j] = NewTheta[r];
@@ -2219,7 +2332,7 @@ void update_XSingle(vector<double> & Alpha, DoubleVec4d& X, DoubleVec4d& Theta, 
 	  double A = exp(LogLikRatio); // acceptance prob
 	  XATTEMPT +=1;
 	  
-	  if( ranf()<A ){ //accept move 
+	  if(distr(eng)<A ){ //accept move 
 	    XACCEPT +=1;
 	    X[r][k][l][j] = NewX;
 	    for(int s=r; s<NREGION; s++){
@@ -2275,7 +2388,7 @@ void update_YSingle(vector<double> & Delta, DoubleVec2d& Y, DoubleVec2d& Psi, Do
       
       YATTEMPT +=1;
       
-      if( ranf()<A ){ //accept move 
+      if(distr(eng)<A ){ //accept move 
 	YACCEPT +=1;
 	Y[r][k] = NewY;
 	for(int s=r; s<NREGION; s++){
@@ -2438,6 +2551,8 @@ void OutputMeanFreq(ofstream & freqfile, vector<string> & RegionName, vector<int
 
 int main ( int argc, char** argv)
 {
+
+
   // MENU PROCESSING PHASE
   cout << "SCAT version " << VERSION << endl;
   int SEED = 0;
@@ -2451,13 +2566,10 @@ int main ( int argc, char** argv)
 
     case 'A': // estimate the location of a sample
       LOCATE = 1;
-      ++argv;
-      --argc;
-      FIRSTSAMPLETOLOCATE = atoi(&argv[1][0])-1;
-      ++argv;
-      --argc;
-      LASTSAMPLETOLOCATE = atoi(&argv[1][0])-1;
+      ++argv; --argc; FIRSTSAMPLETOLOCATE = atoi(&argv[1][0])-1;
+      ++argv; --argc; LASTSAMPLETOLOCATE = atoi(&argv[1][0])-1;
       cout << "Locating Samples " << FIRSTSAMPLETOLOCATE+1 << " to " <<  LASTSAMPLETOLOCATE+1 << endl;
+      cout << "FIRST " << FIRSTSAMPLETOLOCATE << " LAST " << LASTSAMPLETOLOCATE << endl;
       break;
  
     case 'b': // don't update beta
@@ -2465,6 +2577,7 @@ int main ( int argc, char** argv)
       break;
 
     case 'B': // read in boundary file 
+      // this is the "no space" syntax
       filenames["boundaryfile"] = argv[1]+2;
       READBOUNDARY = 1; 
       break;
@@ -2493,16 +2606,16 @@ int main ( int argc, char** argv)
     case 'f': // fix alpha and beta, to values given in subsequent arguments
       UPDATEALPHA = 0;
       UPDATEBETA = 0;
-      ++argv; --argc; ALPHA0 = atof(&argv[1][0]);
+      ++argv;--argc; ALPHA0 = atof(&argv[1][0]);
       ++argv;--argc; ALPHA1 = atof(&argv[1][0]);    
-      ++argv;--argc;  ALPHA2 = atof(&argv[1][0]);
+      ++argv;--argc; ALPHA2 = atof(&argv[1][0]);
       ++argv;--argc; BETA = atof(&argv[1][0]);
       break;
 
     case 'g': // read in grid file, replacement for a boundary file
-      ++argv; --argc;
-      filenames["gridfile"] = argv[1];
+      ++argv; --argc; filenames["gridfile"] = string(argv[1]);
       READGRID = 1;
+      cout << "-g " << filenames["gridfile"] << endl;
       break;
 
     case 'h': // set proposal variance for X update
@@ -2511,13 +2624,14 @@ int main ( int argc, char** argv)
       break;
     
     case 'H':
+      // this is the "no space" syntax
       HYBRIDCHECK = atoi(&argv[1][2]);
-	  break;
+      break;
      
     case 'i' :
-      ++argv; --argc; ALPHA0 = atof(&argv[1][0]);
+      ++argv;--argc; ALPHA0 = atof(&argv[1][0]);
       ++argv;--argc; ALPHA1 = atof(&argv[1][0]);    
-      ++argv;--argc;  ALPHA2 = atof(&argv[1][0]);
+      ++argv;--argc; ALPHA2 = atof(&argv[1][0]);
       ++argv;--argc; BETA = atof(&argv[1][0]);
       break;
       
@@ -2530,6 +2644,7 @@ int main ( int argc, char** argv)
       break;
 
     case 'M': // filename of samples to be assigned
+      // this is the "no space" syntax
       ASSIGNFILE = 1;
       filenames["assignfile"] = argv[1]+2;
       break;
@@ -2550,6 +2665,7 @@ int main ( int argc, char** argv)
       break;
 
     case 'p':
+      // this is the "no space" syntax
       PSEUDOCOUNT = atoi(&argv[1][2]);
       break;
 
@@ -2562,12 +2678,12 @@ int main ( int argc, char** argv)
       break;
 
     case 'S': // seed
-      ++argv;
-      --argc;
-      SEED = atoi(&argv[1][0]);
+      ++argv; --argc; SEED = atoi(&argv[1][0]);
+      cout << "SEED " << SEED << endl;
       break;
 
     case 'v':
+      // this is the "no space" syntax
       VERBOSE = 1;
       OUTPUTX = 1;
       filenames["Xfile"] = argv[1]+2;
@@ -2590,6 +2706,7 @@ int main ( int argc, char** argv)
       break;
       
     case 'Z' : // include subregion info in location file
+      cout << "-Z" << endl;
       USESUBREGION = 1;
       break;
 
@@ -2636,11 +2753,12 @@ int main ( int argc, char** argv)
  
 
   cout << "MAXNALLELE = " << MAXNALLELE <<endl;
-  init_genrand(SEED);
+  // init_genrand(SEED);  DEBUG restore this functionality ASAP!
 
-  filenames["input"]  = argv[1];
-  filenames["regions"] = argv[2];
-  filenames["outputdir"] = argv[3];
+  cout << argv[1] << endl;
+  filenames["input"]  = string(argv[1]);
+  filenames["regions"] = string(argv[2]);
+  filenames["outputdir"] = string(argv[3]);
   
   NLOCI = atoi(argv[4]);
 
