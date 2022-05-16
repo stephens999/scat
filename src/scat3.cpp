@@ -19,6 +19,8 @@
 #include "readboundary.hpp"
 //#include "mt19937ar.hpp"
 #include <random>
+#include <sstream>  // for ToString(foo) functions
+#include <limits>   // for ToString(foo) functions
 
 extern "C" void dpotrf_(
 	const char &uplo,		// (input)
@@ -2549,6 +2551,71 @@ void OutputMeanFreq(ofstream & freqfile, vector<string> & RegionName, vector<int
    }
 }
 
+string ToString(int number)
+{
+    ostringstream ostr;
+    ostr << number;
+    string s(ostr.str());
+    return s;
+}
+
+
+string ToString(unsigned long int number)
+{
+    ostringstream ostr;
+    ostr << number;
+    string s(ostr.str());
+    return s;
+}
+
+string ToString(unsigned long long number)
+{
+    ostringstream ostr;
+    ostr << number;
+    string s(ostr.str());
+    return s;
+}
+
+string ToString(long int number)
+{
+    ostringstream ostr;
+    ostr << number;
+    string s(ostr.str());
+    return s;
+}
+
+string ToString(long long number)
+{
+    ostringstream ostr;
+    ostr << number;
+    string s(ostr.str());
+    return s;
+}
+
+string ToString(double number)
+{
+    if (numeric_limits<double>::has_infinity)
+    {
+        if (number == numeric_limits<double>::infinity())
+        {
+            return "inf";
+        }
+        if (number == -numeric_limits<double>::infinity())
+        {
+            return "-inf";
+        }
+    }
+    if (isnan(number))
+    {
+        return "nan";
+    }
+    ostringstream ostr;
+    ostr << number;
+    string s(ostr.str());
+    return s;
+}
+
+
 int main ( int argc, char** argv)
 {
 
@@ -3075,7 +3142,7 @@ int main ( int argc, char** argv)
       
       double deglat = to_degrees(radlat);
       double deglong = to_degrees(radlong);
-      string msg = RegionName[Perm[r]] + " at [" + str(deglat) + "," + str(deglong) + "]";
+      string msg = RegionName[Perm[r]] + " at [" + ToString(deglat) + "," + ToString(deglong) + "]";
       msg += " is outside the species boundaries established";
       msg += " by " + usedmap + "\n";
       error_and_exit(msg);
