@@ -238,6 +238,13 @@ void OutputMeanFreq(ofstream & freqfile, vector<string> & RegionName, vector<int
 
 void OutputEstimatedFreqs(const DoubleVec4d& ExpTheta, const DoubleVec3d& SumExpTheta, ostream& output, const IntVec2d& Coding, vector<int>& Perm);
 
+std::string ToString(int);
+std::string ToString(unsigned long);
+std::string ToString(unsigned long long);
+std::string ToString(long);
+std::string ToString(long long);
+std::string ToString(double);
+
 void cholesky_in_place(DoubleVec1d& myL, int nregion);
 
 int main ( int argc, char** argv);
