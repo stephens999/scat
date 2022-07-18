@@ -184,7 +184,7 @@ int Mapgrid::lat_to_glat(double latitude) const {
     cerr << "Error: Using an uninitialized Mapgrid object" << endl;
     exit(-1);
   }
-  return (int) trunc(latitude - m_gridminlat);
+  return (int) floor(latitude - m_gridminlat);
 }
 
 int Mapgrid::long_to_glong(double longitude) const {
@@ -192,7 +192,7 @@ int Mapgrid::long_to_glong(double longitude) const {
     cerr << "Error: Using an uninitialized Mapgrid object" << endl;
     exit(-1);
   }
-  return (int) trunc(longitude - m_gridminlong);
+  return (int) floor(longitude - m_gridminlong);
 }
 
 bool Mapgrid::in_range(double latitude, double longitude) const {

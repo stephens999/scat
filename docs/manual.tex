@@ -27,7 +27,7 @@
 \pagenumbering{arabic}
 \begin{document}
 
-\title{Documentation for {\tt SCAT}, version 3.0.2}
+\title{Documentation for {\tt SCAT}, version 3.0.3}
 
 \author{
 Software code and documentation by Matthew Stephens\footnote{email: {\tt mstephens@uchicago.edu}} \\
@@ -35,7 +35,7 @@ WWW: {\tt http://github.com/stephens999/scat}\\
 \\
 }
 
-\date{September 28 2004; updated September 15 2015; revised by Mary Kuhner\footnote{email:  {\tt mkkuhner@uw.edu}} July 29 2021}
+\date{September 28 2004; updated September 15 2015; revised by Mary Kuhner\footnote{email:  {\tt mkkuhner@uw.edu}} July 29 2021, July 18 2022}
 
 
 \maketitle
@@ -276,6 +276,11 @@ the location file:
 LocId(1)  LocNo(1)  SectorNo(1)  Latitude(1)  Longitude(1)
 \end{verbatim}
 \end{small}
+
+Note that as of version 3.0.3, if any of the locations in this file are outside
+the specified species range, the program will terminate with an error.  Either
+enlarge the species range to accomodate all sampling locations, or remove or revise
+sampling locations that fall outside of it.  
 
 \subsection{Echo input data to screen ({\tt -E})}
 The {\tt -E} option will echo the input genotypes file, location file, and 
@@ -731,7 +736,9 @@ results from multiple runs that differ only in their random number seed.
 
 \SCAT can only handle diploid data.  Coding haploids as one known haplotype and
 one missing-data haplotype does not work, since a locus with any missing
-data is disregarded.
+data is disregarded.  If you have haploid data which you want to analyze with \SCAT, 
+let the maintainers know; it would be a fairly easy revision but will not be done unless
+someone actually needs it.
 
 The code which sets the boundaries of the organism's range
 will not work correctly if the range crosses the line opposite
@@ -793,18 +800,20 @@ unreliable.
 
 Occasionally the heatmap of an individual may resemble a thin rim around the
 very edge of the organism's range.  In our experience this may mean that
-the individual is a hybrid, or that it comes from a location which has been
-incorrectly excluded from the range.  In either case, the program finds that
-the individual is a poor fit for all sampling locations, so moves it as far
-away from all of them as possible, leading to the thin rim.  An alternative
-explanation is some form of error in the genotype data, such as misordering
-the columns.
+the individual is a hybrid, that it comes from a remote unsampled location,
+or that its correct location is outside the specified species range.
+In all of these scenarios, the program finds that the individual is a poor 
+fit for all sampling locations, so moves it as far away from all of them as 
+possible, leading to the thin rim.  An alternative explanation is some form 
+of error in the genotype data, such as misordering the columns.
 
 Another unusual outcome is an individual whose continuous assignment is
 spread across the whole map.  If other members of the species can be more
 narrowly assigned, this individual may be a hybrid, or may have too much
 missing data.  In some cases missing data at one or a few highly informative
 microsatellite loci can render an individual very difficult to localize.
+We have also found that highly homozygous individuals are more difficult
+to place.
 
 \section{Other software useful in conjunction with \SCAT} \label{software}
 
@@ -1060,14 +1069,29 @@ also removed:  {\tt -c, -F, -T}.  An option {\tt -E} which claimed
 to allow resetting of the upper limits on loci and alleles (but
 actually did nothing) was removed and its letter repurposed.
 
+\subsection{Changes between 3.0 and 3.0.3}
+
+\subsubsection{Additions}
+The program now checks that all locations in the location file are within the
+specified species range, and terminates with an error if this is not the case.
+The program did not always run successfully when such locations were present, and
+in any case they likely indicate an error either in the map or the location file.
+
+\subsubsection{Modifications}
+The original program used the LAPACK library to factor the covariance matrix.
+This sometimes failed, especially on SNP data.  The LAPACK call has been replaced
+with custom code provided by Joe Felsenstein which does more error recovery.
+Because the MCMC search is highly stochastic, runs with this version may not give
+the same answers as runs with the same seed using previous versions.
+
 %------------------------------------------------------------------------------
 
 
 \section{Acknowledgements}
 
-The software makes use of the LAPACK linear algebra routines for
-finding the Cholesky decomposition of a matrix, and a version of the
-{\tt wn\_PnPoly()} algorithm by Dan Sunday 
+We thank Joe Felsenstein for providing custom code for
+finding the Cholesky decomposition of a matrix, and Dan Sunday for his version of the
+{\tt wn\_PnPoly()} algorithm 
 $$(\text{\tt http://www.softsurfer.com/Archive/algorithm\_0103/algorithm\_0103.htm})$$
 for finding which areas are within an arbitrary polygon.
 

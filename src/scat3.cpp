@@ -318,10 +318,6 @@ int IsInsideBoundary( double x, double y, const DoubleVec1d& BoundaryX, const Do
 
 void InitialiseXY(vector<double> & BoundaryX, vector<double> & BoundaryY, vector<double> & Xcoord, vector<double> & Ycoord, const Mapgrid& mymapgrid)
 {
-  cout << "Before the routine executes" << endl;
-  for(int reg= 0; reg < NREGION-1; ++reg) {
-    cout << reg << " " << Xcoord[reg] << " " << Ycoord[reg] << endl;
-  }
   if(FORESTONLY){
     Xcoord[NREGION-1] = 0.2;
     Ycoord[NREGION-1] = 0.1;
@@ -336,7 +332,7 @@ void InitialiseXY(vector<double> & BoundaryX, vector<double> & BoundaryY, vector
 // regions.  This can sometimes fail.  I replace it with picking a random reference
 // population, which is perhaps less accurate but should always work (if the reference
 // populations are not in range you have other problems).
-#if 0
+#if 1
     double Xcenter = 0;
     double Ycenter = 0;
     for(int r = 0; r<(NREGION-1); r++){
@@ -363,6 +359,7 @@ void InitialiseXY(vector<double> & BoundaryX, vector<double> & BoundaryY, vector
       ntries++;
     } while(InRange(Xcoord[NREGION-1],Ycoord[NREGION-1],BoundaryX,BoundaryY,mymapgrid)==0);
 #endif
+#if 0
     float randpick = distr(eng);
     if (randpick == 1.0) {
       cerr << "distr(eng) returned 1.0; need to guard against this" << endl;
@@ -378,6 +375,7 @@ void InitialiseXY(vector<double> & BoundaryX, vector<double> & BoundaryY, vector
       }
       exit(-1);
     }
+#endif
   }
 }
 
@@ -389,7 +387,7 @@ void ReadInBoundary(ifstream & bfile, vector<double> & BoundaryX, vector<double>
       bfile >> y;
       bfile >> x;
       if (ECHOINPUTS)
-        cout << y << "," << x << endl;
+        cout << to_degrees(y) << "," << to_degrees(x) << endl;
       x = PI*x/180;
       y = PI*y/180;
       BoundaryX.push_back(x);
@@ -660,7 +658,7 @@ void input_positions_data( ifstream & input, vector<double> & x, vector<double> 
       input >> tempy;
       input >> tempx;
     }
-    cout << region << " "  << regionname << " " << x[Perm[region]] << " " << y[Perm[region]] << endl;
+    cout << region << " "  << regionname << " " << to_degrees(y[Perm[region]]) << " " << to_degrees(x[Perm[region]]) << endl;
   } 
 }
 
@@ -1032,19 +1030,31 @@ double Distance(int r, int s, vector<double> & Xcoord, vector<double> & Ycoord){
 }
 
 
-// compute the matrix L (uses the Lapack routine dpotrf)
-void calc_L(double * L,const vector<double> & Alpha, vector<double> & Xcoord, vector<double> & Ycoord)
+// compute the matrix L 
+// previously used the Lapack routine dpotrf but now uses Joe Felsenstein's
+// hand version, as this allows error correction; the dpotrf version would
+// fail on some data, especially SNP data
+void calc_L(DoubleVec1d& L,const vector<double> & Alpha, vector<double> & Xcoord, vector<double> & Ycoord)
 {
   for(int r=0; r<NREGION; r++){
     for(int s=0; s <NREGION; s++){
-      L[r+ s*NREGION] = FittedCovariance(Alpha,Distance(r,s,Xcoord,Ycoord));
+      double tempval = FittedCovariance(Alpha,Distance(r,s,Xcoord,Ycoord));
+      // check added by Mary on Joe's recommendation, in case of negative
+      // values
+      if(tempval >= 0) {
+        L[r+ s*NREGION] = tempval;
+      } else {
+        cout << "Negative value detected in covariance matrix: " << tempval << endl;
+        L[r+ s*NREGION] = 0.0;
+      }
+      
     }
   }
 
+#if 0
   int INFO = 0;
   char UPLO = 'L';
   dpotrf_(UPLO,NREGION,L,NREGION,INFO);
-
   // INFO returns something about whether the computation was successful
   if(INFO>0) {
     cerr << "Warning: INFO=" << INFO << endl;
@@ -1056,6 +1066,8 @@ void calc_L(double * L,const vector<double> & Alpha, vector<double> & Xcoord, ve
     cerr << "This probably means an illegal value in variable " << INFO << endl;
     cerr << "If the message continues to appear after burn-in the results cannot be trusted." << endl;
   }
+#endif
+  cholesky_in_place(L,NREGION);
 }
  
 
@@ -1824,7 +1836,7 @@ bool InForest(double x,double y){
 // after each call to this function, which was an accident waiting to
 // happen.  It now uses internal storage only.  -- Mary 12/30/2020
 
-void update_Location(vector<double> & Alpha, const DoubleVec4d& X, const DoubleVec2d& Mu, const DoubleVec3d& Nu, DoubleVec4d& Theta, DoubleVec4d& ExpTheta, DoubleVec3d& SumExpTheta, DoubleVec3d& LogLik, double * L, const IntVec4d& Count, const IntVec3d& SumCount, vector<double> & Xcoord, vector<double> & Ycoord, vector<int> & Species, vector<vector<vector<int> > > & Genotype, vector<int> & Region, vector<double> & BoundaryX, vector<double> & BoundaryY, const Mapgrid& mymapgrid)
+void update_Location(vector<double> & Alpha, const DoubleVec4d& X, const DoubleVec2d& Mu, const DoubleVec3d& Nu, DoubleVec4d& Theta, DoubleVec4d& ExpTheta, DoubleVec3d& SumExpTheta, DoubleVec3d& LogLik, DoubleVec1d& L, const IntVec4d& Count, const IntVec3d& SumCount, vector<double> & Xcoord, vector<double> & Ycoord, vector<int> & Species, vector<vector<vector<int> > > & Genotype, vector<int> & Region, vector<double> & BoundaryX, vector<double> & BoundaryY, const Mapgrid& mymapgrid)
 {
   // do not need initialization, first use is assignment
   static DoubleVec2d NewTheta(NLOCI,DoubleVec1d(MAXNALLELE,0.0));
@@ -1835,7 +1847,7 @@ void update_Location(vector<double> & Alpha, const DoubleVec4d& X, const DoubleV
 
   // this one has to be an array for use in calc_L, alas.
   // It does not need initialization
-  double * NewL = new double [NREGION * NREGION];
+  DoubleVec1d NewL(NREGION * NREGION,0.0);
 
   for(int rep = 0; rep < 10; rep++){
     vector<double> NewXcoord(Xcoord);
@@ -1973,14 +1985,13 @@ void update_Location(vector<double> & Alpha, const DoubleVec4d& X, const DoubleV
     }
   }
 
-  delete [] NewL;
   // we have modified things on which the log likelihood depends, so update it here
   calc_LogLik(LogLik,Theta,SumExpTheta,Count,SumCount);
 }
 
 
 // update the parameters in the covariance matrix 
-void update_Alpha(vector<double> & Alpha, const DoubleVec4d& X, const DoubleVec2d& Mu, const DoubleVec3d& Nu, DoubleVec4d& Theta, DoubleVec4d& ExpTheta, DoubleVec3d& LogLik, DoubleVec3d& SumExpTheta, const IntVec4d& Count, const IntVec3d& SumCount, double * L, vector<double> & Xcoord, vector<double> & Ycoord)
+void update_Alpha(vector<double> & Alpha, const DoubleVec4d& X, const DoubleVec2d& Mu, const DoubleVec3d& Nu, DoubleVec4d& Theta, DoubleVec4d& ExpTheta, DoubleVec3d& LogLik, DoubleVec3d& SumExpTheta, const IntVec4d& Count, const IntVec3d& SumCount, DoubleVec1d& L, vector<double> & Xcoord, vector<double> & Ycoord)
 {
 
 static DoubleVec4d NewTheta(NREGION,DoubleVec3d(NSPECIES,DoubleVec2d(NLOCI,
@@ -1992,15 +2003,13 @@ static DoubleVec3d NewSumExpTheta(NREGION,DoubleVec2d(NSPECIES,
 static DoubleVec3d NewLogLik(NREGION,DoubleVec2d(NSPECIES,
   DoubleVec1d(NLOCI,0.0)));
 
-// This one has to be an array
-static double* NewL;
+static DoubleVec1d NewL(NREGION*NREGION,0.0);
 
 static int FirstTime = 1;
 static int FirstNREGION;
 static int RecursionCheck = 0;
 
 	if( FirstTime == 1 ) {
- 		NewL = new double[NREGION*NREGION];
  		FirstNREGION = NREGION;
  		FirstTime = 0;
  	}
@@ -2096,17 +2105,15 @@ static int RecursionCheck = 0;
 
 }
 // update the parameters in the covariance matrix M 
-void update_Delta(vector<double> & Delta, const DoubleVec2d& Y, const DoubleVec1d& Lambda, DoubleVec2d& Psi, DoubleVec2d& ExpPsi, DoubleVec1d& SumExpPsi, vector<int> & Species, vector<int> & Region, double * M, vector<double> & Xcoord, vector<double> & Ycoord)
+void update_Delta(vector<double> & Delta, const DoubleVec2d& Y, const DoubleVec1d& Lambda, DoubleVec2d& Psi, DoubleVec2d& ExpPsi, DoubleVec1d& SumExpPsi, vector<int> & Species, vector<int> & Region, DoubleVec1d& M, vector<double> & Xcoord, vector<double> & Ycoord)
 {
   // These don't need initialization as it's handled inline
   static DoubleVec2d NewPsi(NREGION,DoubleVec1d(NSPECIES,0.0));
   static DoubleVec2d NewExpPsi(NREGION,DoubleVec1d(NSPECIES,1.0));
   static DoubleVec1d NewSumExpPsi(NREGION,0.0);
 
-  // This one has to be an array for calc_L use
-  double * NewM = new double [NREGION * NREGION];
+  DoubleVec1d NewM(NREGION * NREGION,0.0);
 
-  
   update_Delta0(Delta, Y);
 
   for(int deltaparam = 1; deltaparam < DELTALENGTH; deltaparam++){
@@ -2175,13 +2182,10 @@ void update_Delta(vector<double> & Delta, const DoubleVec2d& Y, const DoubleVec1
     }
     
   }
-
- delete [] NewM;
-
 }
 
 // derivative of LogLik with respect to x(r,k,l,j) 
-double divLogLikValue(int r, int k, int l, int j, const DoubleVec4d& ExpTheta, const DoubleVec3d& SumExpTheta, const IntVec4d& Count, const IntVec3d& SumCount, double * L)
+double divLogLikValue(int r, int k, int l, int j, const DoubleVec4d& ExpTheta, const DoubleVec3d& SumExpTheta, const IntVec4d& Count, const IntVec3d& SumCount, DoubleVec1d& L)
 {
   double sum = 0;
   for(int s=r; s<NREGION; s++){
@@ -2190,7 +2194,7 @@ double divLogLikValue(int r, int k, int l, int j, const DoubleVec4d& ExpTheta, c
   return sum;
 }
 
-double calcNewdivLogLik(int r, int k, int l, int j, const DoubleVec1d& ExpTheta, const DoubleVec1d& SumExpTheta, const IntVec4d& Count, const IntVec3d& SumCount, double * L)
+double calcNewdivLogLik(int r, int k, int l, int j, const DoubleVec1d& ExpTheta, const DoubleVec1d& SumExpTheta, const IntVec4d& Count, const IntVec3d& SumCount, DoubleVec1d& L)
 {
   double sum = 0;
   for(int s=r; s<NREGION; s++){
@@ -2201,7 +2205,7 @@ double calcNewdivLogLik(int r, int k, int l, int j, const DoubleVec1d& ExpTheta,
 
 
 // update the Xs for a particular allele and locus, in a particular species, across all regions at once
-void update_XJoint(vector<double> & Alpha, DoubleVec4d& X, const DoubleVec2d& Mu, const DoubleVec3d& Nu, DoubleVec4d& Theta, DoubleVec4d& ExpTheta, DoubleVec3d& LogLik, DoubleVec3d& SumExpTheta, const IntVec4d& Count, const IntVec3d& SumCount, double * L)
+void update_XJoint(vector<double> & Alpha, DoubleVec4d& X, const DoubleVec2d& Mu, const DoubleVec3d& Nu, DoubleVec4d& Theta, DoubleVec4d& ExpTheta, DoubleVec3d& LogLik, DoubleVec3d& SumExpTheta, const IntVec4d& Count, const IntVec3d& SumCount, DoubleVec1d& L)
 {
 
   // These do not need initialization as are initialized at use
@@ -2271,7 +2275,7 @@ void update_XJoint(vector<double> & Alpha, DoubleVec4d& X, const DoubleVec2d& Mu
 }
 
 // update each X individually (better acceptance rate/ larger proposal variance,// but more likelihood evaluations!)
-void update_XSingle(vector<double> & Alpha, DoubleVec4d& X, DoubleVec4d& Theta, DoubleVec4d& ExpTheta, DoubleVec3d& LogLik, DoubleVec3d& SumExpTheta, const IntVec4d& Count, const IntVec3d& SumCount, double * L)
+void update_XSingle(vector<double> & Alpha, DoubleVec4d& X, DoubleVec4d& Theta, DoubleVec4d& ExpTheta, DoubleVec3d& LogLik, DoubleVec3d& SumExpTheta, const IntVec4d& Count, const IntVec3d& SumCount, DoubleVec1d&  L)
 {
    static DoubleVec1d NewTheta(NREGION,0.0);
    static DoubleVec1d NewExpTheta(NREGION,0.0);
@@ -2352,7 +2356,7 @@ void update_XSingle(vector<double> & Alpha, DoubleVec4d& X, DoubleVec4d& Theta, 
 }
 
 // update each Y individually (better acceptance rate/ larger proposal variance,// but more likelihood evaluations!)
-void update_YSingle(vector<double> & Delta, DoubleVec2d& Y, DoubleVec2d& Psi, DoubleVec2d& ExpPsi, DoubleVec1d& SumExpPsi, vector<int> & Region, vector<int> & Species, double * M)
+void update_YSingle(vector<double> & Delta, DoubleVec2d& Y, DoubleVec2d& Psi, DoubleVec2d& ExpPsi, DoubleVec1d& SumExpPsi, vector<int> & Region, vector<int> & Species, DoubleVec1d& M)
 {
   // These do not need initialization as are initialized inline
   static DoubleVec1d NewPsi(NREGION,0.0);
@@ -2404,7 +2408,7 @@ void update_YSingle(vector<double> & Delta, DoubleVec2d& Y, DoubleVec2d& Psi, Do
 }
 
 
-void DoAllUpdates(DoubleVec4d& X, double & Beta,  vector<double> & Gamma, vector<double> & Alpha, DoubleVec2d& Mu, DoubleVec3d& Nu, DoubleVec4d& Theta, DoubleVec4d& ExpTheta, DoubleVec3d& LogLik, DoubleVec3d& SumExpTheta, IntVec4d& Count, IntVec3d& SumCount, double * L, vector<vector<vector<int> > > & Genotype, vector<int> & Region, vector<int> & Species, vector<vector<double> > & Pi, vector<double> & Xcoord, vector<double> & Ycoord, DoubleVec2d& Y, double & Eta, vector<double> & Delta, DoubleVec1d& Lambda, DoubleVec2d& Psi, DoubleVec2d& ExpPsi, DoubleVec1d& SumExpPsi, double * M, vector<double> & BoundaryX, vector<double> & BoundaryY, const Mapgrid& mymapgrid )
+void DoAllUpdates(DoubleVec4d& X, double & Beta,  vector<double> & Gamma, vector<double> & Alpha, DoubleVec2d& Mu, DoubleVec3d& Nu, DoubleVec4d& Theta, DoubleVec4d& ExpTheta, DoubleVec3d& LogLik, DoubleVec3d& SumExpTheta, IntVec4d& Count, IntVec3d& SumCount, DoubleVec1d& L, vector<vector<vector<int> > > & Genotype, vector<int> & Region, vector<int> & Species, vector<vector<double> > & Pi, vector<double> & Xcoord, vector<double> & Ycoord, DoubleVec2d& Y, double & Eta, vector<double> & Delta, DoubleVec1d& Lambda, DoubleVec2d& Psi, DoubleVec2d& ExpPsi, DoubleVec1d& SumExpPsi, DoubleVec1d& M, vector<double> & BoundaryX, vector<double> & BoundaryY, const Mapgrid& mymapgrid )
 {
   if(UPDATEBETA ==1)
     update_Beta(Beta,Mu);
@@ -2449,7 +2453,7 @@ void DoAllUpdates(DoubleVec4d& X, double & Beta,  vector<double> & Gamma, vector
  
 }
 
-void InitialiseTheta(DoubleVec4d& Theta, const DoubleVec4d& X, const DoubleVec2d& Mu, const DoubleVec3d& Nu, double * L){
+void InitialiseTheta(DoubleVec4d& Theta, const DoubleVec4d& X, const DoubleVec2d& Mu, const DoubleVec3d& Nu, DoubleVec1d& L){
   
   for(int r=0; r<NREGION; r++){
     for(int k=0; k<NSPECIES; k++){
@@ -2465,7 +2469,7 @@ void InitialiseTheta(DoubleVec4d& Theta, const DoubleVec4d& X, const DoubleVec2d
   }
 }
 
-void Initialise(DoubleVec4d& X, double & Beta,  vector<double> & Gamma, vector<double> & Alpha, DoubleVec2d& Mu, DoubleVec3d& Nu, DoubleVec4d& Theta, double * L, vector<double> & Xcoord, vector<double> & Ycoord){ 
+void Initialise(DoubleVec4d& X, double & Beta,  vector<double> & Gamma, vector<double> & Alpha, DoubleVec2d& Mu, DoubleVec3d& Nu, DoubleVec4d& Theta, DoubleVec1d& L, vector<double> & Xcoord, vector<double> & Ycoord){ 
 
   if(INCLUDENUGGET)
     Alpha[3] = 1.0;
@@ -2615,6 +2619,31 @@ string ToString(double number)
     return s;
 }
 
+void cholesky_in_place(DoubleVec1d& myL, int nregion) {
+  // code provided by Joe Felsenstein
+  float sum, temp;
+  int i, j, k;
+  for (i=0; i<nregion; i++) { 
+    sum = 0.0;
+    for(j=0; j<=i-1; j++)
+      sum = sum + myL[nregion * i + j] * myL[nregion * i + j];
+    if (myL[nregion * i + i] <= sum)
+      temp = 0.0;
+    else
+      temp = sqrt(myL[nregion * i + i] - sum);
+    myL[nregion * i + i] = temp;
+    for(j=i+i; j<nregion; j++) {
+      if (fabs(temp) < 1.0E-12) {
+        myL[nregion * j + i] = 0.0;
+      } else {
+        sum = 0.0;
+        for (k=0; k<i; k++)
+          sum = sum + myL[nregion * i + k] * myL[nregion * j + k];
+        myL[nregion * j + i] = (myL[nregion * j + i] - sum)/temp;
+      }
+    }
+  }
+}
 
 int main ( int argc, char** argv)
 {
@@ -3119,10 +3148,12 @@ int main ( int argc, char** argv)
 
   // check that all reference regions lie within our species range
   // jyamato may 16, 2022
+  bool anybad = false;
   for(vector<int>::size_type r=0; r<RegionsPresent.size(); ++r) {
     double radlat = Ycoord[Perm[r]];
     double radlong = Xcoord[Perm[r]];
     if(!InRange(radlong,radlat,BoundaryX,BoundaryY,mymapgrid)) {
+      anybad = true;
       string usedmap("NULL");
       if (READGRID) {
         usedmap = filenames["gridfile"];
@@ -3145,14 +3176,18 @@ int main ( int argc, char** argv)
       string msg = RegionName[Perm[r]] + " at [" + ToString(deglat) + "," + ToString(deglong) + "]";
       msg += " is outside the species boundaries established";
       msg += " by " + usedmap + "\n";
-      error_and_exit(msg);
+      cout << msg << endl;
     }
+  }
+  if(anybad) {
+    string msg = "One or more populations outside species range:  terminating.";
+    error_and_exit(msg);
   }
 
   //declare memory for L, the matrix in the Cholesky decomp of Sigma
   // these are arrays for use in a C interface
-  double * L = new double [NREGION * NREGION];
-  double * M = new double [NREGION * NREGION];
+  DoubleVec1d L(NREGION * NREGION,0.0);
+  DoubleVec1d M(NREGION * NREGION,0.0);
 
   Initialise(X, Beta, Gamma, Alpha, Mu, Nu, Theta, L, Xcoord, Ycoord);
 
