@@ -1072,17 +1072,19 @@ actually did nothing) was removed and its letter repurposed.
 \subsection{Changes between 3.0 and 3.0.3}
 
 \subsubsection{Additions}
-The program now checks that all locations in the location file are within the
+The program now checks that all reference population locations are within the
 specified species range, and terminates with an error if this is not the case.
-The program did not always run successfully when such locations were present, and
-in any case they likely indicate an error either in the map or the location file.
+When out of range locations were used the program sometimes failed, and in any
+case this likely represents a data entry error either in the species range map
+or the location file.
 
 \subsubsection{Modifications}
-The original program used the LAPACK library to factor the covariance matrix.
-This sometimes failed, especially on SNP data.  The LAPACK call has been replaced
-with custom code provided by Joe Felsenstein which does more error recovery.
-Because the MCMC search is highly stochastic, runs with this version may not give
-the same answers as runs with the same seed using previous versions.
+The original program used the LAPACK library routine dpotrf to factor the 
+covariance matrix.  This sometimes failed, especially on SNP data.  The LAPACK 
+call has been replaced with custom code provided by Joe Felsenstein which does 
+more error recovery.  Because the MCMC search is highly stochastic, runs with 
+this version may not give the same answers as runs with the same seed using 
+previous versions.
 
 %------------------------------------------------------------------------------
 

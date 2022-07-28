@@ -21,6 +21,7 @@
 #include <random>
 #include <sstream>  // for ToString(foo) functions
 #include <limits>   // for ToString(foo) functions
+#include <deque>
 
 extern "C" void dpotrf_(
 	const char &uplo,		// (input)
@@ -620,22 +621,91 @@ void input_positions_data( ifstream & input, vector<double> & x, vector<double> 
   // samples for it were found in the genootypes file), function GetLocationNumber returns 
   // RegionsPresent.size(), which is treated as a "not found" special value.
 
-  // We suppressed printing from this routine as what was printed was extremely confusing!
-  // Mary Kuhner 2021/07/26.
+  // rewritten completely for robustness
+  int regnum, regindex;
+  string regname;
+  double tempx, tempy;
+  int subregion=FLAGINT;
+  // deque rather than vector to avoid vector<bool>
+  deque<bool> regionsfound(RegionsPresent.size(),false);
 
-  int region;
+  while (input) {
+    // read all of the data from one line
+    input >> regname;
+    input >> regnum;
+    if(USESUBREGION == 1)
+      input >> subregion;
+    // note inversion in these two lines, related to the general inverted lat/long issue throughout
+    // this program
+    input >> tempy;
+    input >> tempx;
+
+    // -1 meaning "unknown" should not be in locations file
+    if (regnum <0) {
+      cout << "Negative region numbers not allowed in locations file" << endl;
+      exit(-1);
+    }
+
+    // is this a region we saw in the genotype data?
+    bool found = false;
+    for (unsigned long i = 0; i < RegionsPresent.size(); ++i) {
+      if (regnum == RegionsPresent[i]) {  // here is the matching entry in RegionsPresent
+        found = true;
+        regindex = i;
+        break;
+      }
+    }
+    // if so, capture its information; if not it will be silently discarded
+    if(found) { 
+      if(regionsfound[regindex]) {   // it's a duplicate; abend
+        cout << "Region number " << regnum << " appears 2 or more times in the location file" << endl;
+        exit(-1);
+      }
+      regionsfound[regindex] = true;
+      RegionName[Perm[regindex]] = regname;
+      SubRegion[Perm[regindex]] = subregion;
+      x[Perm[regindex]] = PI * tempx / 180.0; 
+      y[Perm[regindex]] = PI * tempy / 180.0;
+      // echo for quality control; should probably be conditional
+      cout << regname << "\t" << regnum << "\t";
+      if (USESUBREGION) cout << subregion << "\t";
+      cout << tempy << "\t" << tempx << endl;
+    }
+  }
+
+  // check if all needed regions were found in location file
+  bool problem_found = false;
+  for(unsigned long i = 0; i < regionsfound.size(); ++i) {
+    if (regionsfound[i] == false) {
+      problem_found = true;
+      cout << "Region " << RegionsPresent[i] << " " << regname << " not found in location file" << endl;
+    }
+  }
+  if(problem_found) exit(-1);
+
+#if 0
+  int region_index;
+  int original_region;
   string regionname;
-  int subregion=0;
+  int subregion=FLAGINT;     
   double tempx,tempy;
   cout << "Inputting location information" << endl;
   unsigned long r=0;
+  // deque rather than vector to avoid vector<bool>
+  deque<bool> regionsfound(RegionsPresent.size(),false);
   while(r< RegionsPresent.size()){
     input >> regionname;    
-    input >> region;
+    input >> original_region;
     
-    region = GetLocationNumber(RegionsPresent, region);
+    // this routine returns one off the end of RegionsPresent if
+    // we have not seen this region in the genotype data; such regions
+    // are silently discarded as useless
+    region_index = GetLocationNumber(RegionsPresent, original_region);
+    if(region_index != FLAGINT) {
+      regionsfound[region_index] = true;
+    }
     
-    if(region <(-1) ){ 
+    if(region_index <(-1) ){ 
       cerr << "Error in numbering of locations in location file" << endl;
       cerr << "Line of file = " << (r+1) << endl;
       exit(1);
@@ -653,13 +723,14 @@ void input_positions_data( ifstream & input, vector<double> & x, vector<double> 
        // convert x and y into radians (x and y should be decimal lat and long)
        x[Perm[region]] = PI * tempx / 180.0; 
        y[Perm[region]] = PI * tempy / 180.0;
+       cout << original_region << " "  << regionname << " " << to_degrees(y[Perm[region]]) << " " << to_degrees(x[Perm[region]]) << endl;
        r++;
     } else {
       input >> tempy;
       input >> tempx;
     }
-    cout << region << " "  << regionname << " " << to_degrees(y[Perm[region]]) << " " << to_degrees(x[Perm[region]]) << endl;
   } 
+#endif
 }
 
 void output_genotypes(const vector<vector<vector<int> > > & Genotype, const vector<string> & Id)
@@ -1038,18 +1109,10 @@ void calc_L(DoubleVec1d& L,const vector<double> & Alpha, vector<double> & Xcoord
 {
   for(int r=0; r<NREGION; r++){
     for(int s=0; s <NREGION; s++){
-      double tempval = FittedCovariance(Alpha,Distance(r,s,Xcoord,Ycoord));
-      // check added by Mary on Joe's recommendation, in case of negative
-      // values
-      if(tempval >= 0) {
-        L[r+ s*NREGION] = tempval;
-      } else {
-        cout << "Negative value detected in covariance matrix: " << tempval << endl;
-        L[r+ s*NREGION] = 0.0;
-      }
-      
+      L[r+ s*NREGION] = FittedCovariance(Alpha,Distance(r,s,Xcoord,Ycoord));
     }
   }
+  cholesky_in_place(L,NREGION);
 
 #if 0
   int INFO = 0;
@@ -1067,7 +1130,6 @@ void calc_L(DoubleVec1d& L,const vector<double> & Alpha, vector<double> & Xcoord
     cerr << "If the message continues to appear after burn-in the results cannot be trusted." << endl;
   }
 #endif
-  cholesky_in_place(L,NREGION);
 }
  
 

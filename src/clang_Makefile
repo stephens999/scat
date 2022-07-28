@@ -1,5 +1,0 @@
-SCAT3: scat3.cpp readboundary.cpp utility.cpp 
-	clang++ -g -o SCAT3 -fsanitize=memory -fsanitize-memory-track-origins -fPIE -pie -fno-omit-frame-pointer scat3.cpp readboundary.cpp utility.cpp -llapack -lm -I.	
-
-clean:  
-	rm -rf *.o *.out SCAT3

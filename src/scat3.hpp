@@ -27,6 +27,8 @@ extern "C" void dpotrf_(
 using namespace std; 
 const double PI = 3.141592; 
 const string VERSION="3.0.2";
+
+const int FLAGINT = -1;
     
 const int MAXSPECIES = 2;
 // This line is 120 for microsats and 2 for SNPs
