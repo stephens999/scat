@@ -32,7 +32,7 @@ const int FLAGINT = -1;
     
 const int MAXSPECIES = 2;
 // This line is 120 for microsats and 2 for SNPs
-const int MAXNALLELE = 5; 
+const int MAXNALLELE = 120; 
 const int MARGIN = 7;  // margin around grid
 
 typedef std::vector<double> DoubleVec1d;

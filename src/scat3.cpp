@@ -632,6 +632,7 @@ void input_positions_data( ifstream & input, vector<double> & x, vector<double> 
   while (input) {
     // read all of the data from one line
     input >> regname;
+    if (!input.good()) break;   // DEBUG added by Mary as last line was read twice?
     input >> regnum;
     if(USESUBREGION == 1)
       input >> subregion;
