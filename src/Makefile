@@ -5,7 +5,7 @@ CXX     = g++
 #CXXFLAGS = -O3 -DNDEBUG $(INCLUDE)
 CXXFLAGS = -O3 -DNDEBUG -std=gnu++11 $(INCLUDE)
 
-LDFLAGS = -L$(LAPACK_DIR) -llapack
+LDFLAGS = -llapack
 OBJ2 = scat3.o utility.o mt19937ar.o readboundary.o
 
 SCAT3 : $(OBJ2)
