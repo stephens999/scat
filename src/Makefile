@@ -29,7 +29,7 @@ clean:
 ultraclean: clean
 	rm -f SCAT3
 
-mt19937ar.o: mt19937ar.hpp
+mt19937ar.o: mt19937ar.h
 readboundary.o: readboundary.hpp
 utility.o: utility.hpp
 scat3.o: scat3.hpp mt19937ar.hpp readboundary.hpp
