@@ -8,7 +8,7 @@ CFLAGS = -O3 -xHost -DNDEBUG $(INCLUDE)
 CXXFLAGS = $(CFLAGS) -std=c++11
 
 # MKL rather than plain LAPACK
-LDFLAGS = -L$(MKLROOT)/lib/intel64 -lmkl_rt -lpthread -lm -ldl
+LDFLAGS = -L$(MKLROOT)/lib/intel64 -Wl,-rpath,$(MKLROOT)/lib/intel64 -lmkl_rt -lpthread -lm -ldl
 OBJ2 = scat3.o utility.o mt19937ar.o readboundary.o
 
 .SUFFIXES: .hpp .cpp .o
