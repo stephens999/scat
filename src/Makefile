@@ -1,20 +1,17 @@
 SHELL   = sh
 CXX     = g++
-#CFLAGS = -g -std=gnu++11 $(INCLUDE)
-#CFLAGS = -g -std=gnu++11 -D_GLIBCXX_DEBUG $(INCLUDE)
-#CFLAGS = -O3 -DNDEBUG $(INCLUDE)
-CFLAGS = -O3 -DNDEBUG -std=gnu++11 $(INCLUDE)
+#CXXFLAGS = -g -std=gnu++11 $(INCLUDE)
+#CXXFLAGS = -g -std=gnu++11 -D_GLIBCXX_DEBUG $(INCLUDE)
+#CXXFLAGS = -O3 -DNDEBUG $(INCLUDE)
+CXXFLAGS = -O3 -DNDEBUG -std=gnu++11 $(INCLUDE)
 
-LDFLAGS = -llapack
+LDFLAGS = -L$(LAPACK_DIR) -llapack
 OBJ2 = scat3.o utility.o mt19937ar.o readboundary.o
 
-SCAT3 : $(OBJ2) scat3.hpp utility.hpp readboundary.hpp
+SCAT3 : $(OBJ2)
 	$(CXX) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
-.SUFFIXES: .cpp .o
-
-.cpp.o:
-	$(CXX) $(CFLAGS) -c $<
+.SUFFIXES: .hpp .cpp .o
 
 TAGS: *.hpp *.cpp
 	etags $^
