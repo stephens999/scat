@@ -1,11 +1,14 @@
 SHELL   = sh
-CXX     = g++
+CXX     = icpc
+CC      = icc
 #CXXFLAGS = -g -std=gnu++11 $(INCLUDE)
 #CXXFLAGS = -g -std=gnu++11 -D_GLIBCXX_DEBUG $(INCLUDE)
-CFLAGS = -O3 -DNDEBUG $(INCLUDE)
-CXXFLAGS = $(CFLAGS) -std=gnu++11
+INCLUDE = -I$(MKLROOT)/include
+CFLAGS = -O3 -xHost -DNDEBUG $(INCLUDE)
+CXXFLAGS = $(CFLAGS) -std=c++11
 
-LDFLAGS = -llapack
+# MKL rather than plain LAPACK
+LDFLAGS = -L$(MKLROOT)/lib/intel64 -Wl,-rpath,$(MKLROOT)/lib/intel64 -lmkl_rt -lpthread -lm -ldl
 OBJ2 = scat3.o utility.o mt19937ar.o readboundary.o
 
 .SUFFIXES: .hpp .cpp .o
