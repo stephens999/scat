@@ -1,7 +1,7 @@
 // scat3.cpp : Defines the entry point for the console application.
 //
 
-// SCAT version 3.0.2
+// SCAT version 3.0.3
 
 #include "scat3.hpp"
 #include "utility.hpp"
@@ -668,9 +668,11 @@ void input_positions_data( ifstream & input, vector<double> & x, vector<double> 
       x[Perm[regindex]] = PI * tempx / 180.0; 
       y[Perm[regindex]] = PI * tempy / 180.0;
       // echo for quality control; should probably be conditional
-      cout << regname << "\t" << regnum << "\t";
-      if (USESUBREGION) cout << subregion << "\t";
-      cout << tempy << "\t" << tempx << endl;
+      if(ECHOINPUTS) {
+        cout << regname << "\t" << regnum << "\t";
+        if (USESUBREGION) cout << subregion << "\t";
+        cout << tempy << "\t" << tempx << endl;
+      }
     }
   }
 
@@ -747,8 +749,8 @@ void output_genotypes(const vector<vector<vector<int> > > & Genotype, const vect
   }
 }
 
-
-void recode_genotypes(vector<vector<vector<int> > > & OriginalGenotype, vector<vector<vector<int> > > & RecodedGenotype, IntVec2d& Coding, vector<int> & Nallele)
+// DEBUG
+void recode_genotypes(vector<vector<vector<int> > > & OriginalGenotype, vector<vector<vector<int> > > & RecodedGenotype, vector<map<int,int> >& Coding, vector<int> & Nallele)
 {
 	RecodedGenotype = OriginalGenotype; 
   for(int locus=0; locus<NLOCI; locus++){
@@ -756,7 +758,7 @@ void recode_genotypes(vector<vector<vector<int> > > & OriginalGenotype, vector<v
     for(int ind =0; ind<NIND; ind++){
       for(int chrom=0; chrom<2; chrom++){
 	int allele = OriginalGenotype[ind][chrom][locus];
-	if(allele>0){
+	if(allele>=0){
 	  if(find(AllelesPresent.begin(),AllelesPresent.end(),allele)==AllelesPresent.end()) // if allele is not in current list of AllelesPresent, add it
 	    AllelesPresent.push_back(allele);	
 	}
@@ -767,11 +769,6 @@ void recode_genotypes(vector<vector<vector<int> > > & OriginalGenotype, vector<v
     sort(AllelesPresent.begin(),AllelesPresent.end());
     Nallele.push_back(AllelesPresent.size());
 	
-	if( AllelesPresent.size() > MAXNALLELE ) {
-		cerr << "MAXNALLELE is insufficient: " << AllelesPresent.size()  << " needed." << endl;
-		exit(1);
-	}
-
     for(unsigned long allele =0; allele<AllelesPresent.size(); allele++){
       for(int ind =0; ind<NIND; ind++){
 	for(int chrom=0; chrom<2; chrom++){
@@ -854,30 +851,6 @@ void calc_SumCount(const IntVec4d& Count, IntVec3d& SumCount)
     }
   }
 }
-
-// compute "whichrun" type probability for
-// individual
-// WARNING NEVER CALLED
-double simple_Prob(const IntVec4d& Count, const IntVec3d& SumCount,vector<vector<vector<int> > > &  Genotype, int ind, int r)
-{
-  int k=0;
-  double prob = 1;
-  for(int l=0;l<NLOCI; l++){
-    for(int chr =0; chr <2; chr++){
-      if(Genotype[ind][chr][l]>=0){
-	 double p=0;
-	 if(SumCount[r][k][l]>0)
-	   p = (Count[r][k][l][Genotype[ind][chr][l]]*1.0+1.0)/(SumCount[r][k][l]+MAXNALLELE);
-	 if(p==0)
-	   p = 1.0/ (SumCount[r][k][l]+1);
-	 cout << p << endl;
-	 prob *= p;
-      }	
-    }	
-  }
-  return prob;  
-}
-
 
 // compute prob of individual's genotype as hybrid of region r and s
 double log_hybrid_Prob(const IntVec4d& Count, const IntVec3d& SumCount,vector<vector<vector< int> > > &  Genotype, int ind, int r, int s)
@@ -1392,20 +1365,6 @@ void OutputPi(vector<vector<double> > & Pi,vector<string> & RegionName,ostream &
   ostr << endl;
 }
   
-// WARNING NEVER CALLED
-void OutputEstimatedFreqs(const DoubleVec4d& ExpTheta, const DoubleVec3d& SumExpTheta, ostream & output, const IntVec2d& Coding, vector<int> & Perm)
-{
-  for(int l=0;l<NLOCI; l++){
-    for(int allele=0; allele<Nallele[l]; allele++){
-      output << setw(5) << Coding[l][allele] << " : ";
-      for(int r=0;r<NREGION;r++){     
-	output << std::fixed << setprecision(3) << setw(5) << ExpTheta[Perm[r]][0][l][allele]/SumExpTheta[Perm[r]][0][l] << " ";
-      }
-      output << endl;
-    }
-  }
-}
-
 
 void OutputLogMeanProb(const DoubleVec3d& MeanProb, ofstream & output, vector<int> & NMissing, vector<int> & Region, vector<string> & Id, vector<string> & RegionName, vector<int> & Perm, int first, int last, vector<int> & RegionsPresent)
 {
@@ -1489,23 +1448,6 @@ void OutputParameters(ofstream & paramfile, vector<double> & Alpha, double & Bet
   paramfile << endl;     
            
 }     
-
-#if 0
-void OutputTheta(double **** Theta, ostream & output, int ** Coding,vector<int> & Perm)
-{
-  for(int l=0;l<NLOCI; l++){
-    for(int allele=0; allele<Nallele[l]; allele++){
-      output << setw(5) << Coding[l][allele] << " : ";
-      for(int r=0;r<NREGION;r++){     
-	output << std::fixed << setprecision(3) << setw(5) << Theta[Perm[r]][0][l][allele] << " ";
-      }
-      output << endl;
-    }
-  }
-
-}
-#endif
-
 
 // ------------------------- The MCMC update routines ---------------------
 
@@ -1901,16 +1843,25 @@ bool InForest(double x,double y){
 
 void update_Location(vector<double> & Alpha, const DoubleVec4d& X, const DoubleVec2d& Mu, const DoubleVec3d& Nu, DoubleVec4d& Theta, DoubleVec4d& ExpTheta, DoubleVec3d& SumExpTheta, DoubleVec3d& LogLik, DoubleVec1d& L, const IntVec4d& Count, const IntVec3d& SumCount, vector<double> & Xcoord, vector<double> & Ycoord, vector<int> & Species, vector<vector<vector<int> > > & Genotype, vector<int> & Region, vector<double> & BoundaryX, vector<double> & BoundaryY, const Mapgrid& mymapgrid)
 {
+  // has memory for NewTheta and NewExpTheta already been allocated?
+  static bool already_allocated(false);
+
   // do not need initialization, first use is assignment
-  static DoubleVec2d NewTheta(NLOCI,DoubleVec1d(MAXNALLELE,0.0));
-  static DoubleVec2d NewExpTheta(NLOCI,DoubleVec1d(MAXNALLELE,1.0));
+  static DoubleVec2d NewTheta;
+  static DoubleVec2d NewExpTheta;
   static DoubleVec1d NewSumExpTheta(NLOCI,0.0);
   static DoubleVec1d NewLogLik(NLOCI,0.0);
   static DoubleVec1d OldLogLik(NLOCI,0.0);
+  static DoubleVec1d NewL(NREGION * NREGION,0.0);
 
-  // this one has to be an array for use in calc_L, alas.
-  // It does not need initialization
-  DoubleVec1d NewL(NREGION * NREGION,0.0);
+  if(!already_allocated) {
+    already_allocated = true;
+    // allocate ragged arrays for NewTheta and NewExpTheta
+    // the values copied do not matter as they will be overwritten; what we need is
+    // the setup of the internal arrays
+    NewTheta = Theta[0][0];
+    NewExpTheta = ExpTheta[0][0];
+  }
 
   for(int rep = 0; rep < 10; rep++){
     vector<double> NewXcoord(Xcoord);
@@ -1925,7 +1876,7 @@ void update_Location(vector<double> & Alpha, const DoubleVec4d& X, const DoubleV
       // do not bother with further details if proposed location is out of range
       if (!InRange(NewXcoord[NREGION-1],NewYcoord[NREGION-1],BoundaryX,BoundaryY,mymapgrid)) {
         // DEBUG
-        TRACEFILE << to_degrees(NewXcoord[NREGION-1]) << " " << to_degrees(NewYcoord[NREGION-1]) << " Reject out of range" << endl;
+        //TRACEFILE << to_degrees(NewXcoord[NREGION-1]) << " " << to_degrees(NewYcoord[NREGION-1]) << " Reject out of range" << endl;
         continue;
       }
       LogLikRatio = 0; // Hastings ratio
@@ -1937,7 +1888,7 @@ void update_Location(vector<double> & Alpha, const DoubleVec4d& X, const DoubleV
       // do not bother with further details if proposed location is out of range
       if (!InRange(NewXcoord[NREGION-1],NewYcoord[NREGION-1],BoundaryX,BoundaryY,mymapgrid)) {
         // DEBUG
-        TRACEFILE << to_degrees(NewXcoord[NREGION-1]) << " " << to_degrees(NewYcoord[NREGION-1]) << " Reject out of range" << endl;
+        //TRACEFILE << to_degrees(NewXcoord[NREGION-1]) << " " << to_degrees(NewYcoord[NREGION-1]) << " Reject out of range" << endl;
         continue;
       }
       double forwardsprob = 0; // prob density of proposed move
@@ -2025,7 +1976,7 @@ void update_Location(vector<double> & Alpha, const DoubleVec4d& X, const DoubleV
     // test
     if(distr(eng)<A ){ //accept move
       // DEBUG
-      TRACEFILE << to_degrees(NewXcoord[NREGION-1]) << " " << to_degrees(NewYcoord[NREGION-1]) << " Accept" << endl;
+      //TRACEFILE << to_degrees(NewXcoord[NREGION-1]) << " " << to_degrees(NewYcoord[NREGION-1]) << " Accept" << endl;
       LOCACCEPT +=1;
        Xcoord = NewXcoord;
        Ycoord = NewYcoord;
@@ -2044,7 +1995,7 @@ void update_Location(vector<double> & Alpha, const DoubleVec4d& X, const DoubleV
 	 }
        }
     } else {
-      TRACEFILE << to_degrees(NewXcoord[NREGION-1]) << " " << to_degrees(NewYcoord[NREGION-1]) << " Reject" << endl;
+      //TRACEFILE << to_degrees(NewXcoord[NREGION-1]) << " " << to_degrees(NewYcoord[NREGION-1]) << " Reject" << endl;
     }
   }
 
@@ -2056,21 +2007,30 @@ void update_Location(vector<double> & Alpha, const DoubleVec4d& X, const DoubleV
 // update the parameters in the covariance matrix 
 void update_Alpha(vector<double> & Alpha, const DoubleVec4d& X, const DoubleVec2d& Mu, const DoubleVec3d& Nu, DoubleVec4d& Theta, DoubleVec4d& ExpTheta, DoubleVec3d& LogLik, DoubleVec3d& SumExpTheta, const IntVec4d& Count, const IntVec3d& SumCount, DoubleVec1d& L, vector<double> & Xcoord, vector<double> & Ycoord)
 {
+  // have we already arranged memory for NewTheta and NewExpTheta?
+  static bool already_allocated(false);
 
-static DoubleVec4d NewTheta(NREGION,DoubleVec3d(NSPECIES,DoubleVec2d(NLOCI,
-  DoubleVec1d(MAXNALLELE,0.0))));
-static DoubleVec4d NewExpTheta(NREGION,DoubleVec3d(NSPECIES,DoubleVec2d(NLOCI,
-  DoubleVec1d(MAXNALLELE,0.0))));
-static DoubleVec3d NewSumExpTheta(NREGION,DoubleVec2d(NSPECIES,
-  DoubleVec1d(NLOCI,0.0)));
-static DoubleVec3d NewLogLik(NREGION,DoubleVec2d(NSPECIES,
-  DoubleVec1d(NLOCI,0.0)));
+  static DoubleVec4d NewTheta;
+  static DoubleVec4d NewExpTheta;
+  static DoubleVec3d NewSumExpTheta(NREGION,DoubleVec2d(NSPECIES,
+    DoubleVec1d(NLOCI,0.0)));
+  static DoubleVec3d NewLogLik(NREGION,DoubleVec2d(NSPECIES,
+    DoubleVec1d(NLOCI,0.0)));
 
-static DoubleVec1d NewL(NREGION*NREGION,0.0);
+  if(!already_allocated) {
+    already_allocated = true;
+    // allocate ragged arrays for NewTheta and NewExpTheta
+    // the values copied do not matter as they will be overwritten; what we need is
+    // the setup of the internal arrays
+      NewTheta = Theta;
+      NewExpTheta = ExpTheta;
+  }
 
-static int FirstTime = 1;
-static int FirstNREGION;
-static int RecursionCheck = 0;
+  static DoubleVec1d NewL(NREGION*NREGION,0.0);
+
+  static int FirstTime = 1;
+  static int FirstNREGION;
+  static int RecursionCheck = 0;
 
 	if( FirstTime == 1 ) {
  		FirstNREGION = NREGION;
@@ -2521,7 +2481,7 @@ void InitialiseTheta(DoubleVec4d& Theta, const DoubleVec4d& X, const DoubleVec2d
   for(int r=0; r<NREGION; r++){
     for(int k=0; k<NSPECIES; k++){
       for(int l=0; l<NLOCI; l++){
-	for(int j=0;j<MAXNALLELE;j++){	 
+	for(int j=0; j<Nallele[l]; j++){	 
 	  Theta[r][k][l][j] = Mu[l][j] + Nu[k][l][j];
 	  for(int s = 0; s<=r; s++){
 	    Theta[r][k][l][j] += L[r+s*NREGION] * X[s][k][l][j];
@@ -2547,7 +2507,7 @@ void Initialise(DoubleVec4d& X, double & Beta,  vector<double> & Gamma, vector<d
   Gamma = vector<double>(NSPECIES,0.3); // Gamma[k] is 1/variance of Nu[k]
   
   for(int l=0; l<NLOCI; l++){
-    for(int j=0; j<MAXNALLELE; j++){
+    for(int j=0; j<Nallele[l]; j++){
       if(UPDATEMU==1){
 	Mu[l][j] = rnorm(0,sqrt(1.0/Beta));
       }
@@ -2557,7 +2517,7 @@ void Initialise(DoubleVec4d& X, double & Beta,  vector<double> & Gamma, vector<d
   }
   for(int k=0; k<NSPECIES; k++){
     for(int l=0; l<NLOCI; l++){
-      for(int j=0; j<MAXNALLELE; j++){
+      for(int j=0; j<Nallele[l]; j++){
 	if(UPDATENU==1)
 	  Nu[k][l][j] = rnorm(0,1.0/sqrt(Gamma[k]));
 	else
@@ -2569,7 +2529,7 @@ void Initialise(DoubleVec4d& X, double & Beta,  vector<double> & Gamma, vector<d
   for(int r=0; r<NREGION; r++){
     for(int k=0; k<NSPECIES; k++){
       for(int l=0; l<NLOCI; l++){
-	for(int j=0;j<MAXNALLELE;j++){	 
+	for(int j=0;j<Nallele[l];j++){	 
 	  if(UPDATEX==1)
 	    X[r][k][l][j] = rnorm(0,sqrt(1.0/Alpha[0])); //rnorm(0,1);
 	  else
@@ -2582,7 +2542,7 @@ void Initialise(DoubleVec4d& X, double & Beta,  vector<double> & Gamma, vector<d
 }
 
 
-void output_empirical_freqs(vector<string> & RegionName,vector<int> & Perm,const IntVec2d& Coding, const IntVec4d& Count, const IntVec3d& SumCount){
+void output_empirical_freqs(vector<string> & RegionName,vector<int> & Perm, vector<map<int,int> >& Coding, const IntVec4d& Count, const IntVec3d& SumCount){
 	
  	cout << "Empirical Frequencies:" << endl;
     for(int l=0;l<NLOCI; l++){
@@ -2599,7 +2559,7 @@ void output_empirical_freqs(vector<string> & RegionName,vector<int> & Perm,const
 	}
 }
 
-void OutputMeanFreq(ofstream & freqfile, vector<string> & RegionName, vector<int> & Perm, const IntVec2d& Coding, const DoubleVec4d& MeanFreq )
+void OutputMeanFreq(ofstream & freqfile, vector<string> & RegionName, vector<int> & Perm, vector<map<int,int> >& Coding, const DoubleVec4d& MeanFreq )
 {
    freqfile << "Posterior Mean Freqs:" << endl;
    for(int l=0;l<NLOCI; l++){
@@ -2909,9 +2869,6 @@ int main ( int argc, char** argv)
     exit(1);
   }
 
- 
-
-  cout << "MAXNALLELE = " << MAXNALLELE <<endl;
   // init_genrand(SEED);  DEBUG restore this functionality ASAP!
 
   cout << argv[1] << endl;
@@ -2996,8 +2953,8 @@ int main ( int argc, char** argv)
   vector<vector<vector<int> > > Genotype;
   vector<vector<vector<int> > > OriginalGenotype;
    
-   // Coding[i] is the actual allele that i codes for
-  IntVec2d Coding(NLOCI,IntVec1d(MAXNALLELE,0.0));
+   // Coding[locus][i] is the actual allele that i codes for
+  vector<map<int,int> > Coding(NLOCI);
 
   vector<int> NMissing(NIND,0);
   vector<int> Species;
@@ -3096,13 +3053,29 @@ int main ( int argc, char** argv)
   if(READGRID) mymapgrid.PrintGrid(mapinfofile);
 
   vector<int> SubRegion(NREGION,0);
-  
+
+  // make a paradigm IntVec4d and DoubleVec4d with ragged inner dimension for
+  // number of alleles per locus; these will be copied to initialize all other
+  // variables of the same dimensions, which are region, species, locus, allele.
+
+  DoubleVec4d paradigm_dbl(NREGION,DoubleVec3d(NSPECIES,DoubleVec2d(NLOCI,DoubleVec1d())));
+  IntVec4d paradigm_int(NREGION,IntVec3d(NSPECIES,IntVec2d(NLOCI,IntVec1d())));
+  for(int regno = 0; regno < NREGION; ++regno) {
+    for(int specno = 0; specno < NSPECIES; ++specno) {
+      for(int locno = 0; locno < NLOCI; ++locno) {
+        DoubleVec1d temp_dbl(Nallele[locno],0.0);
+        IntVec1d temp_int(Nallele[locno],0);
+        paradigm_dbl[regno][specno][locno] = temp_dbl;
+        paradigm_int[regno][specno][locno] = temp_int;
+      }
+    }
+  }
 
   //declare memory for theta, and SumExpTheta
   // Count[r][k][l][j] is number of allele j in region r, species k, locus l
   // SumCount[r][k][l] is the sum of Count over j
 
-  IntVec4d Count(NREGION,IntVec3d(NSPECIES,IntVec2d(NLOCI,IntVec1d(MAXNALLELE,0))));
+  IntVec4d Count(paradigm_int);
   IntVec3d SumCount(NREGION,IntVec2d(NSPECIES,IntVec1d(NLOCI,0)));
 
   // Theta[r][k][l][j] is log relative freq of allele j in region r,
@@ -3115,13 +3088,19 @@ int main ( int argc, char** argv)
   // L is the (lower-triangular) Cholesky decomposition of the covariance of the thetas
   // mu is a priori N(0,1/beta), where beta is a priori Gamma(NBETA,LBETA)
 
-   DoubleVec4d Theta(NREGION,DoubleVec3d(NSPECIES,DoubleVec2d(NLOCI,DoubleVec1d(MAXNALLELE,0.0)))); 
-   DoubleVec4d ExpTheta(NREGION,DoubleVec3d(NSPECIES,DoubleVec2d(NLOCI,DoubleVec1d(MAXNALLELE,0.0)))); 
-   DoubleVec3d SumExpTheta(NREGION,DoubleVec2d(NSPECIES,DoubleVec1d(NLOCI,0.0)));
-   DoubleVec4d X(NREGION,DoubleVec3d(NSPECIES,DoubleVec2d(NLOCI,DoubleVec1d(MAXNALLELE,0.0))));
+   DoubleVec4d Theta(paradigm_dbl); 
+   DoubleVec4d ExpTheta(paradigm_dbl); 
 
-  DoubleVec2d Mu(NLOCI,DoubleVec1d(MAXNALLELE,0.0));
-  DoubleVec3d Nu(NSPECIES,DoubleVec2d(NLOCI,DoubleVec1d(MAXNALLELE,0.0)));
+   // these hold posterior means of Frequencies, X and X^2 in each region
+   DoubleVec4d MeanFreq(paradigm_dbl);
+   DoubleVec4d MeanX(paradigm_dbl);
+   DoubleVec4d MeanX2(paradigm_dbl);
+
+   DoubleVec3d SumExpTheta(NREGION,DoubleVec2d(NSPECIES,DoubleVec1d(NLOCI,0.0)));
+   DoubleVec4d X(paradigm_dbl);
+
+   DoubleVec2d Mu(paradigm_dbl[0][0]);
+   DoubleVec3d Nu(paradigm_dbl[0]);
   
   // Psi[r][k] is log relative abundance of species k in region r
   // ExpPsi and SumExpPsi as in Theta
@@ -3141,13 +3120,6 @@ int main ( int argc, char** argv)
   DoubleVec2d Y(NREGION,DoubleVec1d(NSPECIES,0.0));
   DoubleVec1d Lambda(NSPECIES,0.0);
 
-  // these hold posterior means of Frequencies, X and X^2 in each region
-  DoubleVec4d MeanFreq(NREGION, DoubleVec3d(NSPECIES,DoubleVec2d(NLOCI,
-    DoubleVec1d(MAXNALLELE,0.0))));
-  DoubleVec4d MeanX(NREGION, DoubleVec3d(NSPECIES,DoubleVec2d(NLOCI,
-    DoubleVec1d(MAXNALLELE,0.0))));
-  DoubleVec4d MeanX2(NREGION, DoubleVec3d(NSPECIES,DoubleVec2d(NLOCI,
-    DoubleVec1d(MAXNALLELE,0.0))));
 
   // These are dimensioned by region1, species1, region2, species2
   // and represent covariances and correlations among regions
@@ -3169,7 +3141,7 @@ int main ( int argc, char** argv)
   for(int r=0; r<NREGION; r++){
     for(int k=0; k<NSPECIES; k++){
       for(int l=0; l<NLOCI; l++){
-        for(int j=0;j<MAXNALLELE;j++){	 
+        for(int j=0;j<Nallele[l];j++){	 
           Theta[r][k][l][j] = Mu[l][j] + Nu[k][l][j];
           ExpTheta[r][k][l][j] = exp(Theta[r][k][l][j]);
         }

@@ -1,8 +1,7 @@
 #ifndef SCAT2_HPP
 #define SCAT2_HPP
 
-// SCAT version 3.0.2
-// debug comment
+// SCAT version 3.0.3
 
 #include <string>
 #include <iostream>
@@ -15,6 +14,7 @@
 #include <numeric>
 #include <cmath>
 #include "string.h"
+#include <map>
 
 extern "C" void dpotrf_(
 	const char &uplo,		// (input)
@@ -26,13 +26,13 @@ extern "C" void dpotrf_(
 
 using namespace std; 
 const double PI = 3.141592; 
-const string VERSION="3.0.2";
+const string VERSION="3.0.3";
 
 const int FLAGINT = -1;
     
 const int MAXSPECIES = 2;
 // This line is 120 for microsats and 2 for SNPs
-const int MAXNALLELE = 120; 
+// const int MAXNALLELE = 120; 
 const int MARGIN = 7;  // margin around grid
 
 typedef std::vector<double> DoubleVec1d;
@@ -102,7 +102,7 @@ void input_positions_data( ifstream & input, vector<double> & x, vector<double> 
 
 void output_genotypes(const vector<vector<vector<int> > > & Genotype, const vector<string> & Id);
 
-void recode_genotypes(vector<vector<vector<int> > > & OriginalGenotype, vector<vector<vector<int> > > & RecodedGenotype, IntVec2d& Coding, vector<int> & Nallele);
+void recode_genotypes(vector<vector<vector<int> > > & OriginalGenotype, vector<vector<vector<int> > > & RecodedGenotype, vector<map<int,int> >& Coding, vector<int> & Nallele);
 
 void SubtractFromCount(int ind, IntVec4d& Count, IntVec3d& SumCount, vector<int> & Region, vector<int> & Species, vector<vector<vector<int> > > & Genotype);
 
@@ -234,11 +234,11 @@ void InitialiseTheta(DoubleVec4d& Theta, const DoubleVec4d& X, const DoubleVec2d
 
 void Initialise(DoubleVec4d& X, double & Beta,  vector<double> & Gamma, vector<double> & Alpha, DoubleVec2d& Mu, DoubleVec3d& Nu, DoubleVec4d& Theta, DoubleVec1d& L, vector<double> & Xcoord, vector<double> & Ycoord);
 
-void output_empirical_freqs(vector<string> & RegionName,vector<int> & Perm, const IntVec2d& Coding, const IntVec4d& Count, const IntVec3d& SumCount);
+void output_empirical_freqs(vector<string> & RegionName,vector<int> & Perm, vector<map<int,int> >& Coding, const IntVec4d& Count, const IntVec3d& SumCount);
 	
-void OutputMeanFreq(ofstream & freqfile, vector<string> & RegionName, vector<int> & Perm, const IntVec2d& Coding, const DoubleVec4d& MeanFreq );
+void OutputMeanFreq(ofstream & freqfile, vector<string> & RegionName, vector<int> & Perm, vector<map<int,int> >& Coding, const DoubleVec4d& MeanFreq );
 
-void OutputEstimatedFreqs(const DoubleVec4d& ExpTheta, const DoubleVec3d& SumExpTheta, ostream& output, const IntVec2d& Coding, vector<int>& Perm);
+void OutputEstimatedFreqs(const DoubleVec4d& ExpTheta, const DoubleVec3d& SumExpTheta, ostream& output, vector<map<int,int> >& Coding, vector<int>& Perm);
 
 std::string ToString(int);
 std::string ToString(unsigned long);
